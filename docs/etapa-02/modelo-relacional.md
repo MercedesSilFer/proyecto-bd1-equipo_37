@@ -2,7 +2,7 @@
 
 Transformación del Diagrama Entidad-Relación al modelo relacional, con notación de claves primarias (PK), claves foráneas (FK) y restricciones de unicidad (UQ).
 
-![Diagrama Entidad-Relación de SmartHome Store](DER\DER.png)
+![Diagrama Entidad-Relación de SmartHome Store](DER/DER.png)
 
 ## Reglas de mapeo aplicadas
 
