@@ -2,7 +2,7 @@
 
 Transformación del Diagrama Entidad-Relación al modelo relacional, con notación de claves primarias (PK), claves foráneas (FK) y restricciones de unicidad (UQ).
 
-![Diagrama Entidad-Relación de SmartHome Store](DER\DER.png)
+![Diagrama Entidad-Relación de SmartHome Store](DER/DER.png)
 
 ## Reglas de mapeo aplicadas
 
@@ -129,3 +129,88 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | cantidad | INT | |
 | alicuota_iva | DECIMAL | |
 | iva_monto | DECIMAL | Calculada |
+
+## Diagrama relacional
+
+```mermaid
+erDiagram
+    CLIENTE ||--o{ PEDIDO : realiza
+    METODO_PAGO ||--o{ PEDIDO : tiene
+    USUARIO |o--o{ PEDIDO : gestiona
+    PEDIDO ||--|{ DETALLE_PEDIDO : contiene
+    PRODUCTO ||--o{ DETALLE_PEDIDO : "incluido en"
+    CATEGORIA ||--o{ PRODUCTO : pertenece
+
+    CLIENTE {
+        INT cod_cliente PK
+        VARCHAR nombre
+        VARCHAR apellido
+        VARCHAR email UK
+        VARCHAR contraseña
+        VARCHAR calle
+        VARCHAR numero
+        VARCHAR ciudad
+        VARCHAR provincia
+        VARCHAR cod_postal
+        DATETIME fecha_registro
+        }
+        
+        USUARIO {
+        INT cod_usuario PK
+        VARCHAR nombre_usuario UK
+        VARCHAR contraseña
+        VARCHAR rol
+        BIT estado
+    }
+
+    CATEGORIA {
+        INT cod_categoria PK
+        VARCHAR nombre UK
+    }
+
+    PRODUCTO {
+        INT cod_producto PK
+        VARCHAR nombre
+        DECIMAL precio_lista
+        DECIMAL alicuota_iva
+        INT stock
+        INT cod_categoria FK
+    }   
+
+    METODO_PAGO {
+        INT cod_metodo_pago PK
+        VARCHAR  nombre
+    }
+
+    PEDIDO {
+        INT cod_pedido PK
+        DATETIME fecha_pedido
+        VARCHAR estado
+        VARCHAR estado_pago
+        VARCHAR ref_transaccion
+        VARCHAR calle
+        VARCHAR numero
+        VARCHAR ciudad
+        VARCHAR provincia
+        VARCHAR cod_postal
+        VARCHAR estado_envio "O"
+        DATETIME fecha_envio "O"
+        VARCHAR transportista "O"
+        DATETIME fecha_entrega "O"
+        VARCHAR nro_seguimiento "O"
+        INT cod_cliente FK
+        INT cod_metodo_pago FK
+        INT cod_usuario FK "O"
+    }
+
+    DETALLE_PEDIDO {
+        INT cod_pedido PK,FK
+        INT cod_producto PK,FK
+        INT item
+        DECIMAL precio_unitario_venta
+        INT cantidad
+        DECIMAL alicuota_iva
+        DECIMAL iva_monto
+    }
+```
+
