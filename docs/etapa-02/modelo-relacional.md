@@ -296,7 +296,7 @@ erDiagram
         INT cod_compra PK
         DATETIME fecha
         VARCHAR estado
-        VARCHAR nro_comprobante_prov O
+        VARCHAR nro_comprobante_prov "O"
         INT cod_proveedor FK
         INT cod_usuario FK
     }
