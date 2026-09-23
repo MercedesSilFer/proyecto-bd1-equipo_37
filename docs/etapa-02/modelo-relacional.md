@@ -314,9 +314,9 @@ erDiagram
         VARCHAR numero
         DATETIME fecha_emision
         VARCHAR cond_iva_cliente
-        VARCHAR tipo_documento_cliente O
-        VARCHAR nro_documento_cliente O
-        VARCHAR razon_social O
+        VARCHAR tipo_documento_cliente "O"
+        VARCHAR nro_documento_cliente "O"
+        VARCHAR razon_social "O"
         VARCHAR punto_venta
         DECIMAL subtotal
         DECIMAL iva_total
