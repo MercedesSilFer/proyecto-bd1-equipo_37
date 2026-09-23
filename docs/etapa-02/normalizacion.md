@@ -58,13 +58,13 @@ Se procede eliminando el grupo repetitivo (varios productos por pedido en la mis
 | 5003 | 4011 | Auriculares BT | Electrónica | 25000 | 2 |
 | 5003 | 3141 | Funda Notebook | Accesorios | 8000 | 2 |
 
-Ambas tablas cumplen 1FN: valores atómicos, clave identificada (`cod_pedido` en pedido; `cod_pedido + cod_producto` en detalle_pedido), sin grupos repetitivos.
+Ambas tablas cumplen 1FN: valores atómicos, clave identificada ("cod_pedido" en pedido; "cod_pedido + cod_producto" en detalle_pedido), sin grupos repetitivos.
 
 ## 4. Segunda Forma Normal (2FN)
 
 Una relación está en 2FN si está en 1FN y todos sus atributos no clave tienen una dependencia funcional completa de la clave primaria; es decir, no debe existir ninguna dependencia funcional parcial en la que un subconjunto de la clave primaria determine un atributo no clave.
 
-pedido no cambia (su clave es simple, no aplica dependencia parcial). En detalle_pedido, la clave es compuesta: se detecta que nombre_producto y categoria dependen únicamente de cod_producto, una parte de la clave, no de la combinación completa. Es una **dependencia parcial**, por lo que se extraen a una tabla producto.
+"pedido" no cambia (su clave es simple, no aplica dependencia parcial). En "detalle_pedido", la clave es compuesta: se detecta que "nombre_producto" y "categoria" dependen únicamente de "cod_producto", una parte de la clave, no de la combinación completa. Es una **dependencia parcial**, por lo que se extraen a una tabla producto.
 
 **detalle_pedido (2FN)**
 
@@ -85,5 +85,33 @@ pedido no cambia (su clave es simple, no aplica dependencia parcial). En detalle
 | 5794 | Heladera 300L | Electrodomésticos |
 | 3141 | Funda Notebook | Accesorios |
 
-precio_unitario y cantidad sí dependen de la clave completa (esa combinación puntual de pedido y producto), por lo que permanecen en detalle_pedido.
+"precio_unitario" y "cantidad" sí dependen de la clave completa (esa combinación puntual de pedido y producto), por lo que permanecen en "detalle_pedido".
+
+## 5. Tercera Forma Normal (3FN)
+
+Una relación está en 3FN si está en 2FN y no contiene dependencias funcionales transitivas; es decir, ningún atributo no clave depende de otro atributo no clave que, a su vez, dependa de la clave primaria.
+
+En "pedido", los atributos "nombre_apellido", "email", "calle", "numero", "ciudad", "provincia" y "cod_postal" dependen de "cod_cliente", que a su vez depende de "cod_pedido": "cod_pedido -> cod_cliente → nombre_apellido". Es una **dependencia transitiva**, por lo que se extraen a una tabla "cliente".
+
+**pedido (3FN)**
+
+| cod_pedido | fecha | cod_cliente | metodo_pago | estado_pago | ref_transaccion |
+|---|---|---|---|---|---|
+| 5001 | 5/9/2024 | 101 | Tarjeta Crédito | Aprobado | TX-88231 |
+| 5002 | 6/9/2024 | 107 | Transferencia | Aprobado | TX-88232 |
+| 5003 | 7/9/2024 | 110 | Tarjeta Débito | Pendiente | TX-88233 |
+
+**cliente**
+
+| cod_cliente | nombre_apellido | email | calle | numero | ciudad | provincia | cod_postal |
+|---|---|---|---|---|---|---|---|
+| 101 | Marcelo López | marcelo51@gmail.com | Madariaga | 2145 | Capital | Corrientes | 3400 |
+| 107 | Silvia Gauna | sgauna@gmail.com | Av. Edison | 306 | Resistencia | Chaco | H3500 |
+| 110 | María Gómez | mgomez@gmail.com | Chubut | 3580 | Posadas | Misiones | N3301 |
+
+"detalle_pedido" y "producto" no sufren cambios en este paso: ya no tienen dependencias transitivas (cada atributo depende directamente de su clave).
+
+Con esto, "pedido", "detalle_pedido", "producto" y "cliente" alcanzan 3FN.
+
+Los atributos que a simple vista podrían parecer una dependencia transitiva sin resolver ("precio_unitario_venta" y "alicuota_iva` en "detalle_pedido", la dirección de envío en pedido, los datos fiscales del cliente en factura), son atributos históricos: son valores capturados en un momento del proceso, no como referencias a la entidad de origen (ver decisiones-diseno.md).
 
