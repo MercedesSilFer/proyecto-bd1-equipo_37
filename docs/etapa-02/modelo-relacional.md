@@ -130,6 +130,67 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | alicuota_iva | DECIMAL | |
 | iva_monto | DECIMAL | Calculada |
 
+### proveedor
+| Columna | Tipo | Restricción |
+|---|---|---|
+| cod_proveedor | INT | PK |
+| razon_social | VARCHAR | |
+| cuit | VARCHAR | UK |
+| calle | VARCHAR | |
+| numero | VARCHAR | |
+| ciudad | VARCHAR | |
+| provincia | VARCHAR | |
+
+### compra
+| Columna | Tipo | Restricción |
+|---|---|---|
+| cod_compra | INT | PK |
+| fecha | DATETIME | |
+| estado | VARCHAR | |
+| nro_comprobante_prov | VARCHAR | Opcional |
+| cod_proveedor | INT | FK → proveedor |
+| cod_usuario | INT | FK → usuario |
+
+### detalle_compra
+| Columna | Tipo | Restricción |
+|---|---|---|
+| cod_compra | INT | PK, FK → compra |
+| cod_producto | INT | PK, FK → producto |
+| costo_unitario | DECIMAL | |
+| cantidad | INT | |
+
+### factura
+| Columna | Tipo | Restricción |
+|---|---|---|
+| cod_factura | INT | PK |
+| tipo_comprobante | VARCHAR | |
+| numero | VARCHAR | |
+| fecha_emision | DATETIME | |
+| cond_iva_cliente | VARCHAR | |
+| tipo_documento_cliente | VARCHAR | Opcional |
+| nro_documento_cliente | VARCHAR | Opcional |
+| razon_social | VARCHAR | Opcional |
+| punto_venta | VARCHAR | |
+| subtotal | DECIMAL | |
+| iva_total | DECIMAL | |
+| total | DECIMAL | |
+| cae | VARCHAR | |
+| fecha_vto_cae | DATETIME | |
+| cod_pedido | INT | FK → pedido |
+| cod_usuario | INT | FK → usuario |
+
+### auditoria
+| Columna | Tipo | Restricción |
+|---|---|---|
+| cod_auditoria | INT | PK |
+| entidad | VARCHAR | |
+| operacion | VARCHAR | |
+| registro_id | INT | |
+| fecha | DATETIME | |
+| valor_anterior | VARCHAR | |
+| valor_nuevo | VARCHAR | |
+| cod_usuario | INT | FK → usuario |
+
 ## Diagrama relacional
 
 ```mermaid
@@ -140,6 +201,14 @@ erDiagram
     PEDIDO ||--|{ DETALLE_PEDIDO : contiene
     PRODUCTO ||--o{ DETALLE_PEDIDO : "incluido en"
     CATEGORIA ||--o{ PRODUCTO : pertenece
+    PEDIDO ||--o{ FACTURA : emite
+    USUARIO ||--o{ FACTURA : confecciona
+    PROVEEDOR ||--o{ COMPRA : provee
+    USUARIO ||--o{ COMPRA : registra
+    COMPRA ||--o{ DETALLE_COMPRA : contiene
+    PRODUCTO ||--o{ DETALLE_COMPRA : "incluido en"
+    USUARIO ||--o{ AUDITORIA : registra
+
 
     CLIENTE {
         INT cod_cliente PK
@@ -211,6 +280,70 @@ erDiagram
         INT cantidad
         DECIMAL alicuota_iva
         DECIMAL iva_monto
+    }
+
+    PROVEEDOR {
+        INT cod_proveedor PK
+        VARCHAR razon_social
+        VARCHAR cuit UK
+        VARCHAR calle
+        VARCHAR numero
+        VARCHAR ciudad
+        VARCHAR provincia
+    }
+
+    COMPRA {
+        INT cod_compra PK
+        DATETIME fecha
+        VARCHAR estado
+        VARCHAR nro_comprobante_prov O
+        INT cod_proveedor FK
+        INT cod_usuario FK
+    }
+
+    DETALLE_COMPRA {
+        INT cod_compra PK,FK
+        INT cod_producto PK,FK
+        DECIMAL costo_unitario
+        INT cantidad
+    }
+
+    FACTURA {
+        INT cod_factura PK
+        VARCHAR tipo_comprobante
+        VARCHAR numero
+        DATETIME fecha_emision
+        VARCHAR cond_iva_cliente
+        VARCHAR tipo_documento_cliente O
+        VARCHAR nro_documento_cliente O
+        VARCHAR razon_social O
+        VARCHAR punto_venta
+        DECIMAL subtotal
+        DECIMAL iva_total
+        DECIMAL total
+        VARCHAR cae
+        DATETIME fecha_vto_cae
+        INT cod_pedido FK
+        INT cod_usuario FK
+    }
+
+    AUDITORIA {
+        INT cod_auditoria PK
+        VARCHAR entidad
+        VARCHAR operacion
+        INT registro_id
+        DATETIME fecha
+        VARCHAR valor_anterior
+        VARCHAR valor_nuevo
+        INT cod_usuario FK
+    }
+
+    USUARIO {
+        INT cod_usuario PK
+        VARCHAR nombre_usuario UK
+        VARCHAR contraseña
+        VARCHAR rol
+        VARCHAR estado
     }
 ```
 
