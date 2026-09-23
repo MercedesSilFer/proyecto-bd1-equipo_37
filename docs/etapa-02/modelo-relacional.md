@@ -27,24 +27,24 @@ Esta nueva tabla tendrá como clave primaria la combinación de las claves prima
 
 En el DER propuesto para el sistema, las entidades fuertes que participan en el registro de un pedido son: cliente, pedido, metodo_pago, producto, categoria y usuario.
 
-Los atributos compuestos del DER (`nombre_completo`, `direccion`, `destino_envio`) se descomponen en sus componentes simples como columnas independientes:
-`nombre_completo` -> `nombre` + `apellido`, 
-`direccion` -> `calle` + `numero`, 
-`destino_envio` -> `calle` + `numero` + `ciudad` + `provincia` + `cod_postal`.
+Los atributos compuestos del DER (nombre_completo, direccion, destino_envio) se descomponen en sus componentes simples como columnas independientes:
+nombre_completo -> nombre + apellido, 
+direccion -> calle + numero, 
+destino_envio -> calle + numero + ciudad + provincia + cod_postal.
 
 Relación 1:N -> clave foránea en el lado "N". La entidad del lado "muchos" incorpora como FK la clave primaria de la entidad del lado "uno":
-`categoria (1) — producto (N)` -> `producto.cod_categoria` FK, 
-`cliente (1) — Pedido (N)` -> `pedido.cod_cliente` FK, 
-`metodo_pago (1) — pedido (N)` -> `metodo_pago.cod_metodo_pago` FK, 
-`usuario (1) — pedido (N)` -> `pedido.cod_usuario` FK.
+categoria (1) — producto (N) -> producto.cod_categoria FK, 
+cliente (1) — Pedido (N) -> pedido.cod_cliente FK, 
+metodo_pago (1) — pedido (N) -> metodo_pago.cod_metodo_pago FK, 
+usuario (1) — pedido (N) -> pedido.cod_usuario FK.
 
-Relación N:M: La relación `pedido — producto` (`contiene`) pasa a ser la tabla `detalle_pedido`, cuya PK combina las FK de ambas entidades participantes(cod_pedido, cod_producto).
+Relación N:M: La relación pedido — producto (`contiene`) pasa a ser la tabla `detalle_pedido`, cuya PK combina las FK de ambas entidades participantes(cod_pedido, cod_producto).
 
-Atributos de la relación N:M detalle_pedido: Los atributos que colgaban del rombo de relación en el DER (`cantidad`, `precio_unitario_venta`, `alicuota_iva`, `iva_monto`, `item` en "contiene") pasan a ser columnas de `detalle_pedido`, ya que dependen funcionalmente de la combinación completa de ambas FK.
+Atributos de la relación N:M detalle_pedido: Los atributos que colgaban del rombo de relación en el DER (cantidad, precio_unitario_venta, alicuota_iva, iva_monto, item en "contiene") pasan a ser columnas de detalle_pedido, ya que dependen funcionalmente de la combinación completa de ambas FK.
 
-Los atributos marcados como "Derived" en el DER (`monto_total` de pedido y `subtotal` en la relación M:N) no se almacenan como columna física; se calculan en el momento de la consulta o mediante función/columna generada.
+Los atributos marcados como "Derived" en el DER (monto_total de pedido y subtotal en la relación M:N) no se almacenan como columna física; se calculan en el momento de la consulta o mediante función/columna generada.
 
-Los atributos marcados `(O)`/`Optional` en el DER (`estado_envio`, `transportista`, `nro_seguimiento`, `fecha_envio`, `fecha_entrega`) se mantienen como columnas que admiten valores nulos.
+Los atributos marcados (O)/Optional en el DER (estado_envio, transportista, nro_seguimiento, fecha_envio, fecha_entrega) se mantienen como columnas que admiten valores nulos.
 
 A continuación el detalle en tablas del mapeo de cada una de las entidades fuertes y relaciones con sus respectivos atributos,  implicadas en el registro de un pedido, especificando nombre de la tabla, restricciones PK y UQ, columnas y tipo de dato: 
 
