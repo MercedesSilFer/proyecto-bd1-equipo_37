@@ -25,3 +25,17 @@ Los datos fiscales (CUIT y razón social) se guardan en la factura, pero el nomb
 ## 6. Localidad y provincia como texto
 
 Se consideró pasar localidad y provincia a tablas de catálogo, tanto para evitar errores de carga (mayúsculas, tildes) como para eliminar la dependencia transitiva que afecta la 3FN. Finalmente se descartó para no sumar complejidad al modelo. Queda asentado acá porque fue una decisión tomada a propósito y no un descuido en la normalización.
+
+## 7. Domicilio como columnas directas, sin historial versionado
+
+Se evaluó modelar el domicilio del cliente en una entidad "domicilio" versionada, para evitar que un cambio de dirección afecte a pedidos ya despachados y evitar datos duplicados (en tabla domicilio y tabla pedido) referenciando a dicha tabla. Se descartó la opción por el bajo volumen de pedidos esperados para un mismo cliente: la ganancia de evitar duplicación no justifica la complejidad adicional de crear nueva entidad domicilio. En su lugar, "pedido" guarda las columnas de dirección directamente, copiadas al momento de confirmarse (se aplica el mismo criterio que "precio_unitario_venta" en detalle_venta). El nivel de atomicidad de los datos de domicilio guardados en pedido permite optimizar las consultas realizadas sobre estos datos y mediante aplicación se obliga al cliente a rellenar campos específicos para cada dato evitando olvidos.
+
+## 8. Precio de venta con IVA incluido; precio de lista en neto
+
+"producto.precio_lista" se registra en valor neto (sin IVA), de acuerdo a cómo se administran los precios internamente. El precio final que ve el cliente y que se congela en "detalle_pedido.precio_unitario_venta" incluye el IVA, esto coincide con la práctica habitual de un comercio minorista, donde el precio exhibido es el que efectivamente se paga.
+
+## 9. Alícuota de IVA en Producto y en DetallePedido
+
+"producto.alicuota_iva" refleja la alícuota vigente aplicable al producto (ya que ésta puede variar según su clasificación fiscal, entre categorías de productos). "detallePedido.alicuota_iva" es una copia histórica de esa alícuota al momento de la venta, se justifica no porque varíe entre productos, sino porque las alícuotas pueden modificarse en el tiempo (por ejemplo por decreto); un pedido ya facturado no debe verse afectado por cambios normativos posteriores.
+
+
