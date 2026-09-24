@@ -25,27 +25,6 @@ Esta nueva tabla tendrá como clave primaria la combinación de las claves prima
 
 7. **Atributos opcionales**: Los atributos marcados "(O)/Optional" en el DER se mantienen como columnas que admiten valores nulos. 
 
-En el DER propuesto para el sistema, las entidades fuertes que participan en el registro de un pedido son: cliente, pedido, metodo_pago, producto, categoria y usuario.
-
-Los atributos compuestos del DER (nombre_completo, direccion, destino_envio) se descomponen en sus componentes simples como columnas independientes:
-nombre_completo -> nombre + apellido, 
-direccion -> calle + numero, 
-destino_envio -> calle + numero + ciudad + provincia + cod_postal.
-
-Relación 1:N -> clave foránea en el lado "N". La entidad del lado "muchos" incorpora como FK la clave primaria de la entidad del lado "uno":
-categoria (1) — producto (N) -> producto.cod_categoria FK, 
-cliente (1) — Pedido (N) -> pedido.cod_cliente FK, 
-metodo_pago (1) — pedido (N) -> metodo_pago.cod_metodo_pago FK, 
-usuario (1) — pedido (N) -> pedido.cod_usuario FK.
-
-Relación N:M: La relación pedido — producto (`contiene`) pasa a ser la tabla `detalle_pedido`, cuya PK combina las FK de ambas entidades participantes(cod_pedido, cod_producto).
-
-Atributos de la relación N:M detalle_pedido: Los atributos que colgaban del rombo de relación en el DER (cantidad, precio_unitario_venta, alicuota_iva, iva_monto, item en "contiene") pasan a ser columnas de detalle_pedido, ya que dependen funcionalmente de la combinación completa de ambas FK.
-
-Los atributos marcados como "Derived" en el DER (monto_total de pedido y subtotal en la relación M:N) no se almacenan como columna física; se calculan en el momento de la consulta o mediante función/columna generada.
-
-Los atributos marcados (O)/Optional en el DER (estado_envio, transportista, nro_seguimiento, fecha_envio, fecha_entrega) se mantienen como columnas que admiten valores nulos.
-
 A continuación el detalle en tablas del mapeo de cada una de las entidades fuertes y relaciones con sus respectivos atributos,  implicadas en el registro de un pedido, especificando nombre de la tabla, restricciones PK y UQ, columnas y tipo de dato: 
 
 ## Tablas
@@ -191,6 +170,41 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | valor_nuevo | VARCHAR | |
 | cod_usuario | INT | FK → usuario |
 
+
+## Descripciones del mapeo
+
+En el DER propuesto para el sistema, las entidades fuertes son: cliente, pedido, metodo_pago, producto, categoria, usuario, proveedor, compra, factura y auditoria.
+
+Los atributos compuestos del DER (nombre_completo, direccion, destino_envio) se descomponen en sus componentes simples como columnas independientes:
+nombre_completo -> nombre + apellido.
+direccion -> calle + numero,
+destino_envio -> calle + numero + ciudad + provincia + cod_postal.
+
+Relación 0:1 -> usuario (0..1) — pedido (N) -> pedido.cod_usuario FK (Opcional), ya que un usuario puede gestionar cero o varios pedidos, pero no todo pedido tiene necesariamente un usuario que lo gestione.
+
+Relación 1:N -> clave foránea en el lado "N". La entidad del lado "muchos" incorpora como FK la clave primaria de la entidad del lado "uno":
+categoria (1) — producto (N) -> producto.cod_categoria FK, 
+cliente (1) — Pedido (N) -> pedido.cod_cliente FK, 
+metodo_pago (1) — pedido (N) -> metodo_pago.cod_metodo_pago FK, 
+proveedor (1) — compra (N) -> compra.cod_proveedor FK,
+usuario (1) — compra (N) -> compra.cod_usuario FK,
+usuario (1) — factura (N) -> factura.cod_usuario FK,
+usuario (1) — auditoria (N) -> auditoria.cod_usuario FK.
+
+Relación 1:1 opcional: pedido (1) — factura (0..1). La FK se ubica en el lado de cardinalidad obligatoria hacia el otro, es decir en `factura` (factura.cod_pedido), ya que toda factura requiere obligatoriamente un pedido, mientras que un pedido puede no tener factura todavía (por ejemplo, si todavía no fue facturado).
+
+Relación N:M: La relación pedido — producto (`contiene`) pasa a ser la tabla `detalle_pedido`, cuya PK combina las FK de ambas entidades participantes (cod_pedido, cod_producto).
+La relación compra — producto (`incluye`) pasa a ser la tabla `detalle_compra`, cuya PK combina las FK de ambas entidades participantes (cod_compra, cod_producto).
+
+Atributos de la relación N:M detalle_pedido: Los atributos que colgaban del rombo de relación en el DER (cantidad, precio_unitario_venta, alicuota_iva, iva_monto, item en "contiene") pasan a ser columnas de detalle_pedido, ya que dependen funcionalmente de la combinación completa de ambas FK.
+
+Atributos de la relación N:M detalle_compra: Los atributos que colgaban del rombo de relación en el DER (costo_unitario, cantidad en "incluye") pasan a ser columnas de detalle_compra, por el mismo motivo.
+
+Los atributos marcados como "Derived" en el DER (monto_total de pedido, monto_total de compra y subtotal en las relaciones N:M "contiene" e "incluye") no se almacenan como columna física; se calculan en el momento de la consulta o mediante función/columna generada.
+
+Los atributos marcados (O)/Optional en el DER (estado_envio, transportista, nro_seguimiento, fecha_envio, fecha_entrega en pedido; nro_comprobante_prov en compra; tipo_documento_cliente, nro_documento_cliente, razon_social en factura) se mantienen como columnas que admiten valores nulos.
+
+
 ## Diagrama relacional
 
 ```mermaid
@@ -204,8 +218,8 @@ erDiagram
     PEDIDO ||--o| FACTURA : emite
     USUARIO ||--o{ FACTURA : confecciona
     PROVEEDOR ||--o{ COMPRA : provee
-    USUARIO ||--o{ COMPRA : registra
-    COMPRA ||--|{ DETALLE_COMPRA : contiene
+    USUARIO ||--o{ COMPRA : registrado_por
+    COMPRA ||--|{ DETALLE_COMPRA : incluye
     PRODUCTO ||--o{ DETALLE_COMPRA : "incluido en"
     USUARIO ||--o{ AUDITORIA : registra
 
@@ -336,14 +350,6 @@ erDiagram
         VARCHAR valor_anterior
         VARCHAR valor_nuevo
         INT cod_usuario FK
-    }
-
-    USUARIO {
-        INT cod_usuario PK
-        VARCHAR nombre_usuario UK
-        VARCHAR contraseña
-        VARCHAR rol
-        VARCHAR estado
     }
 ```
 
