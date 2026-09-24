@@ -14,7 +14,7 @@ Un esquema sin normalizar produce **anomalías**: de inserción (no se puede reg
 
 ## 2. Tabla inicial obtenida de planilla original del negocio (sin normalizar)
 
-| Cód. Pedido | Fecha | Cód. Cliente | Nombre y Apellido | Email | Dirección | Método Pago | Estado Pago | Ref. Transacción | Cód. Producto | Nombre Producto | Categoría | Precio Unitario | Cantidad |
+| Cód. Pedido | Fecha | Cód. Cliente | Nombre y Apellido | Email | Dirección | Método Pago | Estado Pago | Ref. Transacción | Cód. Producto | Nombre Producto | Categoría | Precio Unitario Venta | Cantidad |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 5001 | 5/9/2024 | 101 | Marcelo López | marcelo51@gmail.com | Calle Madariaga 2145, Corrientes Capital, CP 3400 | Tarjeta Crédito | Aprobado | TX-88231 | 3786 | Smart TV 50" | Electrónica | 350000 | 1 |
 | 5001 | 5/9/2024 | 101 | Marcelo López | marcelo51@gmail.com | Calle Madariaga 2145, Corrientes Capital, CP 3400 | Tarjeta Crédito | Aprobado | TX-88231 | 4011 | Auriculares BT | Electrónica | 25000 | 2 |
@@ -28,7 +28,7 @@ Se observa redundancia: los datos del cliente se repiten en cada línea de produ
 
  cod_pedido -> fecha, cod_cliente, metodo_pago, estado_pago, ref_transaccion
 
- cod_cliente -> nombre_apellido, email, calle, numero, ciudad, provincia, cod_postal
+ cod_cliente -> nombre_apellido, email, dirección
 
  cod_producto -> nombre_producto, categoria
 
@@ -68,7 +68,7 @@ Una relación está en 2FN si está en 1FN y todos sus atributos no clave tienen
 
 **detalle_pedido (2FN)**
 
-| cod_pedido | cod_producto | precio_unitario | cantidad |
+| cod_pedido | cod_producto | precio_unitario_venta | cantidad |
 |---|---|---|---|
 | 5001 | 3786 | 350000 | 1 |
 | 5001 | 4011 | 25000 | 2 |
@@ -113,7 +113,7 @@ En "pedido", los atributos "nombre_apellido", "email", "calle", "numero", "ciuda
 
 Con esto, "pedido", "detalle_pedido", "producto" y "cliente" alcanzan 3FN.
 
-Los atributos que a simple vista podrían parecer una dependencia transitiva sin resolver ("precio_unitario_venta" y "alicuota_iva` en "detalle_pedido", la dirección de envío en pedido, los datos fiscales del cliente en factura), son atributos históricos: son valores capturados en un momento del proceso, no como referencias a la entidad de origen (ver decisiones-diseno.md).
+Los atributos que a simple vista podrían parecer una dependencia transitiva sin resolver ("precio_unitario_venta" en "detalle_pedido", "alicuota_iva" que se agregará en el modelo final también en "detalle_pedido", los datos de dirección de envío en el pedido, los datos fiscales del cliente en factura), son atributos históricos: son valores capturados en un momento del proceso y guardados por decisión de modelado, no como referencias a la entidad de origen (ver decisiones-diseno.md).
 
 ## 6. Normalización del proceso de compras a proveedores
 
