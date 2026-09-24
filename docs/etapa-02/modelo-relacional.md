@@ -201,11 +201,11 @@ erDiagram
     PEDIDO ||--|{ DETALLE_PEDIDO : contiene
     PRODUCTO ||--o{ DETALLE_PEDIDO : "incluido en"
     CATEGORIA ||--o{ PRODUCTO : pertenece
-    PEDIDO ||--o{ FACTURA : emite
+    PEDIDO ||--o| FACTURA : emite
     USUARIO ||--o{ FACTURA : confecciona
     PROVEEDOR ||--o{ COMPRA : provee
     USUARIO ||--o{ COMPRA : registra
-    COMPRA ||--o{ DETALLE_COMPRA : contiene
+    COMPRA ||--|{ DETALLE_COMPRA : contiene
     PRODUCTO ||--o{ DETALLE_COMPRA : "incluido en"
     USUARIO ||--o{ AUDITORIA : registra
 
