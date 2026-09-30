@@ -47,7 +47,7 @@ CREATE TABLE categoria
 (
   cod_categoria INT IDENTITY CONSTRAINT PK_categoria PRIMARY KEY,
   nombre VARCHAR(50) NOT NULL,
-  cod_categoria_padre INT NULL, --para una jerarqu�a
+  cod_categoria_padre INT NULL, --para una jerarquía
   activo BIT NOT NULL,
   CONSTRAINT UQ_categoria_nombre_padre UNIQUE (nombre, cod_categoria_padre),
   CONSTRAINT FK_categoria_categoria_padre FOREIGN KEY (cod_categoria_padre) REFERENCES categoria(cod_categoria) ON DELETE NO ACTION ON UPDATE NO ACTION,
@@ -96,10 +96,10 @@ CREATE TABLE proveedor
   CONSTRAINT UQ_proveedor_cuit UNIQUE (cuit),
   CONSTRAINT CK_proveedor_cuit CHECK (cuit LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'),
   CONSTRAINT CK_proveedor_provincia CHECK (UPPER(provincia) IN ('BUENOS AIRES', 'CATAMARCA', 'CHACO', 'CHUBUT', 
-                                                              'CIUDAD AUT�NOMA DE BUENOS AIRES','C�RDOBA', 'CORRIENTES', 
-                                                              'ENTRE R�OS', 'FORMOSA', 'JUJUY', 'LA PAMPA', 'LA RIOJA', 'MENDOZA', 
-                                                              'MISIONES', 'NEUQU�N', 'R�O NEGRO', 'SALTA', 'SAN JUAN', 'SAN LUIS', 
-                                                              'SANTA CRUZ', 'SANTA FE', 'SANTIAGO DEL ESTERO', 'TIERRA DEL FUEGO', 'TUCUM�N') 
+                                                              'CIUDAD AUTÓNOMA DE BUENOS AIRES','CÓRDOBA', 'CORRIENTES', 
+                                                              'ENTRE RÍOS', 'FORMOSA', 'JUJUY', 'LA PAMPA', 'LA RIOJA', 'MENDOZA', 
+                                                              'MISIONES', 'NEUQUÉN', 'RÍO NEGRO', 'SALTA', 'SAN JUAN', 'SAN LUIS', 
+                                                              'SANTA CRUZ', 'SANTA FE', 'SANTIAGO DEL ESTERO', 'TIERRA DEL FUEGO', 'TUCUMÁN') 
                                          AND provincia = UPPER(provincia)),
 CONSTRAINT DF_proveedor_activo DEFAULT 1 FOR activo,
   CONSTRAINT CK_proveedor_estado CHECK(activo IN (0,1))
