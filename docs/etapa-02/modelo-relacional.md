@@ -93,10 +93,10 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | cod_producto | INT | PK |
 | nombre | VARCHAR | |
 | precio_lista | DECIMAL | |
-| alicuota_iva | DECIMAL | |
+| descripcion | VARCHAR | Opcional |
+| cod_alicuota | INT | FK -> alicuota_iva |
 | stock | INT | |
 | cod_categoria | INT | FK -> categoria |
-
 
 ### detalle_pedido
 | Columna | Tipo Dato| Restricción |
@@ -170,10 +170,61 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | valor_nuevo | VARCHAR | |
 | cod_usuario | INT | FK → usuario |
 
+### alicuota_iva
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_alicuota | INT | PK (código oficial de ARCA) |
+| nombre | VARCHAR | UQ |
+| porcentaje | DECIMAL | UQ |
+
+### promocion
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_promocion | INT | PK |
+| nombre | VARCHAR | |
+| descripcion | VARCHAR | Opcional |
+| fecha_inicio | DATETIME | |
+| fecha_fin | DATETIME | |
+| porcentaje_descuento | DECIMAL | Opcional |
+| nro_cuotas | INT | Opcional |
+
+### promocion_producto
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_promocion | INT | PK, FK -> promocion |
+| cod_producto | INT | PK, FK -> producto |
+
+### slide
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_slide | INT | PK |
+| url | VARCHAR | UQ |
+| cod_promocion | INT | FK -> promocion |
+
+### multimedia
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_multimedia | INT | PK |
+| url | VARCHAR | UQ |
+| cod_producto | INT | FK -> producto |
+
+### especificacion
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_especificacion | INT | PK |
+| nombre | VARCHAR | UQ |
+
+### especificacion_producto
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_producto | INT | PK, FK -> producto |
+| cod_especificacion | INT | PK, FK -> especificacion |
+| valor | VARCHAR | |
+
 
 ## Descripciones del mapeo
 
-En el DER propuesto para el sistema, las entidades fuertes son: cliente, pedido, metodo_pago, producto, categoria, usuario, proveedor, compra, factura y auditoria.
+En el DER propuesto para el sistema, las entidades fuertes son: cliente, pedido, metodo_pago, producto, categoria, usuario, proveedor, compra, factura, auditoria, alicuota_iva, promocion, slide, multimedia y especificacion.
 
 Los atributos compuestos del DER (nombre_completo, direccion, destino_envio) se descomponen en sus componentes simples como columnas independientes:
 nombre_completo -> nombre + apellido.
@@ -189,12 +240,19 @@ metodo_pago (1) — pedido (N) -> metodo_pago.cod_metodo_pago FK,
 proveedor (1) — compra (N) -> compra.cod_proveedor FK,
 usuario (1) — compra (N) -> compra.cod_usuario FK,
 usuario (1) — factura (N) -> factura.cod_usuario FK,
-usuario (1) — auditoria (N) -> auditoria.cod_usuario FK.
+usuario (1) — auditoria (N) -> auditoria.cod_usuario FK,
+alicuota_iva (1) — producto (N) -> producto.cod_alicuota FK,
+promocion (1) — slide (N) -> slide.cod_promocion FK,
+producto (1) — multimedia (N) -> multimedia.cod_producto FK.
 
 Relación 1:1 opcional: pedido (1) — factura (0..1). La FK se ubica en el lado de cardinalidad obligatoria hacia el otro, es decir en `factura` (factura.cod_pedido), ya que toda factura requiere obligatoriamente un pedido, mientras que un pedido puede no tener factura todavía (por ejemplo, si todavía no fue facturado).
 
 Relación N:M: La relación pedido — producto (`contiene`) pasa a ser la tabla `detalle_pedido`, cuya PK combina las FK de ambas entidades participantes (cod_pedido, cod_producto).
 La relación compra — producto (`incluye`) pasa a ser la tabla `detalle_compra`, cuya PK combina las FK de ambas entidades participantes (cod_compra, cod_producto).
+La relación producto — promocion (`participa`) pasa a ser la tabla `promocion_producto`, cuya PK combina las FK de ambas entidades participantes (cod_promocion, cod_producto).
+La relación producto — especificacion (`posee`) pasa a ser la tabla `especificacion_producto`, cuya PK combina las FK de ambas entidades participantes (cod_producto, cod_especificacion).
+
+Atributos de la relación N:M especificacion_producto: el atributo que colgaba del rombo "posee" (valor) pasa a ser columna de especificacion_producto, ya que depende de la combinación completa de ambas FK (el mismo tipo de especificación tiene distinto valor en cada producto).
 
 Atributos de la relación N:M detalle_pedido: Los atributos que colgaban del rombo de relación en el DER (cantidad, precio_unitario_venta, alicuota_iva, iva_monto, item en "contiene") pasan a ser columnas de detalle_pedido, ya que dependen funcionalmente de la combinación completa de ambas FK.
 
@@ -202,8 +260,7 @@ Atributos de la relación N:M detalle_compra: Los atributos que colgaban del rom
 
 Los atributos marcados como "Derived" en el DER (monto_total de pedido, monto_total de compra y subtotal en las relaciones N:M "contiene" e "incluye") no se almacenan como columna física; se calculan en el momento de la consulta o mediante función/columna generada.
 
-Los atributos marcados (O)/Optional en el DER (estado_envio, transportista, nro_seguimiento, fecha_envio, fecha_entrega en pedido; nro_comprobante_prov en compra; tipo_documento_cliente, nro_documento_cliente, razon_social en factura) se mantienen como columnas que admiten valores nulos.
-
+Los atributos marcados (O)/Optional en el DER (estado_envio, transportista, nro_seguimiento, fecha_envio, fecha_entrega en pedido; nro_comprobante_prov en compra; tipo_documento_cliente, nro_documento_cliente, razon_social en factura; descripcion en producto; descripcion, porcentaje_descuento y nro_cuotas en promocion) se mantienen como columnas que admiten valores nulos.
 
 ## Diagrama relacional
 
@@ -222,6 +279,13 @@ erDiagram
     COMPRA ||--|{ DETALLE_COMPRA : incluye
     PRODUCTO ||--o{ DETALLE_COMPRA : "incluido en"
     USUARIO ||--o{ AUDITORIA : registra
+    ALICUOTA_IVA ||--o{ PRODUCTO : aplica
+    PRODUCTO ||--o{ PROMOCION_PRODUCTO : participa
+    PROMOCION ||--|{ PROMOCION_PRODUCTO : incluye
+    PROMOCION ||--o{ SLIDE : publica
+    PRODUCTO ||--o{ MULTIMEDIA : muestra
+    PRODUCTO ||--o{ ESPECIFICACION_PRODUCTO : posee
+    ESPECIFICACION ||--o{ ESPECIFICACION_PRODUCTO : corresponde
 
 
     CLIENTE {
@@ -254,11 +318,12 @@ erDiagram
     PRODUCTO {
         INT cod_producto PK
         VARCHAR nombre
+        VARCHAR descripcion "O"
         DECIMAL precio_lista
-        DECIMAL alicuota_iva
+        INT cod_alicuota FK
         INT stock
         INT cod_categoria FK
-    }   
+    } 
 
     METODO_PAGO {
         INT cod_metodo_pago PK
@@ -350,6 +415,50 @@ erDiagram
         VARCHAR valor_anterior
         VARCHAR valor_nuevo
         INT cod_usuario FK
+    }
+
+    ALICUOTA_IVA {
+        INT cod_alicuota PK
+        VARCHAR nombre UK
+        DECIMAL porcentaje UK
+    }
+
+    PROMOCION {
+        INT cod_promocion PK
+        VARCHAR nombre
+        VARCHAR descripcion "O"
+        DATETIME fecha_inicio
+        DATETIME fecha_fin
+        DECIMAL porcentaje_descuento "O"
+        INT nro_cuotas "O"
+    }
+
+    PROMOCION_PRODUCTO {
+        INT cod_promocion PK,FK
+        INT cod_producto PK,FK
+    }
+
+    SLIDE {
+        INT cod_slide PK
+        VARCHAR url UK
+        INT cod_promocion FK
+    }
+
+    MULTIMEDIA {
+        INT cod_multimedia PK
+        VARCHAR url UK
+        INT cod_producto FK
+    }
+
+    ESPECIFICACION {
+        INT cod_especificacion PK
+        VARCHAR nombre UK
+    }
+
+    ESPECIFICACION_PRODUCTO {
+        INT cod_producto PK,FK
+        INT cod_especificacion PK,FK
+        VARCHAR valor
     }
 ```
 

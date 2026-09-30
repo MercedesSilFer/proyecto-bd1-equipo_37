@@ -36,6 +36,21 @@ Se evaluó modelar el domicilio del cliente en una entidad "domicilio" versionad
 
 ## 9. Alícuota de IVA en Producto y en DetallePedido
 
-"producto.alicuota_iva" refleja la alícuota vigente aplicable al producto (ya que ésta puede variar según su clasificación fiscal, entre categorías de productos). "detallePedido.alicuota_iva" es una copia histórica de esa alícuota al momento de la venta, se justifica no porque varíe entre productos, sino porque las alícuotas pueden modificarse en el tiempo (por ejemplo por decreto); un pedido ya facturado no debe verse afectado por cambios normativos posteriores.
+"producto.cod_alicuota" referencia la alícuota vigente aplicable al producto en el catálogo alicuota_iva (ver decisión 13)(ya que ésta puede variar según su clasificación fiscal, entre categorías de productos). "detallePedido.alicuota_iva" es una copia histórica de esa alícuota al momento de la venta, se justifica no porque varíe entre productos, sino porque las alícuotas pueden modificarse en el tiempo (por ejemplo por decreto); un pedido ya facturado no debe verse afectado por cambios normativos posteriores.
 
 
+## 10. Valor de la especificación en la relación y no en la entidad
+
+`especificacion` funciona como catálogo con el nombre de cada característica (por ejemplo "Tamaño de pantalla"). El dato concreto de cada producto ("50 pulgadas") se guarda en `especificacion_producto.valor`, porque depende de la combinación producto + especificación. Así se evita repetir el nombre de la especificación en cada producto y se garantiza que se escriba siempre igual (nombre único).
+
+## 11. URLs en lugar de archivos
+
+`multimedia` y `slide` guardan la dirección del archivo alojado en un servidor de contenidos, no el archivo en sí. Esto mantiene la base liviana y permite cambiar el archivo sin modificar la estructura. Se exige que la URL comience con `https://`.
+
+## 12. Precio con promoción
+
+El descuento no modifica `producto.precio_lista`. Al confirmar la venta, el precio final con IVA y con el descuento de la promoción vigente queda congelado en `detalle_pedido.precio_unitario_venta` (mismo criterio que RN.03). Si hay varias promociones vigentes para un producto se aplica la de mayor descuento (RN.24). Esta regla involucra varias filas y no puede resolverse con un CHECK, por lo que se implementará en la Etapa V.
+
+## 13. Catálogo de alícuotas de IVA
+
+Las alícuotas se registran en la tabla `alicuota_iva` y cada producto la referencia mediante `cod_alicuota`. Si una norma modifica una alícuota, se actualiza una sola fila y todos los productos quedan al día. Como código se usa el que asigna ARCA a cada alícuota en la factura electrónica (3 = 0 %, 9 = 2,5 %, 8 = 5 %, 4 = 10,5 %, 5 = 21 %, 6 = 27 %), lo que facilita la integración con la facturación. `detalle_pedido.alicuota_iva` no referencia al catálogo: guarda una copia del porcentaje vigente al momento de la venta, para que los cambios posteriores no alteren ventas ni facturas ya emitidas (complementa la decisión 9).

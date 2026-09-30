@@ -3,7 +3,8 @@
 ## Funciones que cubrirá el sistema
 
 - **Gestión de clientes**: registro y autogestión de clientes (alta, login con email/contraseña, nombre completo y dirección de envío).
-- **Gestión de productos**: catálogo de productos y categorías, con sus respectivos precio de lista y stock.
+- **Gestión de productos**: catálogo de productos y categorías, con sus respectivos precio de lista, alícuota de IVA, stock, descripción, especificaciones técnicas (ficha técnica) y contenido multimedia (imágenes y videos).
+- **Gestión de promociones**: registro de promociones con vigencia, porcentaje de descuento y/o cuotas sin interés, aplicables a uno o varios productos, y sus slides (banners) para la página principal de la tienda.
 - **Gestión de compras a proveedores**: catálogo de proveedores, historial de compras y control de stock mediante actualización en catálogo de productos.
 - **Registro de pedidos**: con confirmación por parte del cliente, validación automática de stock disponible antes de confirmar la operación, y seguimiento logístico del envío (transportista, número de seguimiento, estado), método de pago, estado y monto como datos propios del pedido.
 - **Registro de métodos de pago.**

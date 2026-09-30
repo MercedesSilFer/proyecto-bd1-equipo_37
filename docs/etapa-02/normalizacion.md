@@ -234,3 +234,4 @@ En "proveedor", "cuit" es clave candidata (cuit -> cod_proveedor), así que no g
 Con esto, "compra", "detalle_compra", "proveedor", "usuario" y "producto" alcanzan 3FN y coinciden con las tablas del modelo relacional (ver modelo-relacional.md).
 
 "costo_unitario" en "detalle_compra" es un atributo histórico: guarda el costo pactado en esa compra y no se actualiza si el proveedor cambia sus precios después (RN.08). El monto total de la compra no se almacena: se calcula a partir de "costo_unitario" y "cantidad" de cada línea, igual que el total del pedido (RN.10).
+

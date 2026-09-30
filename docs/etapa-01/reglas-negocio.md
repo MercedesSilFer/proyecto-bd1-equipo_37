@@ -24,7 +24,7 @@
 
 **RN.12:** Cada operación interna del sistema se realiza a través de un usuario con credenciales únicas y rol asignado previamente: depósito, administrador o soporte. No existe el rol vendedor (en e-commerce el pedido lo genera el cliente directamente, sin intervención de un vendedor).
 
-**RN.13:** El rol depósito gestiona las compras a proveedores y confirma el despacho de pedidos (lo que dispara la salida de stock); el rol administrador gestiona el catálogo (productos, categorías, proveedores, precios), la administración de usuarios (creación de cuentas), y tiene acceso de solo lectura a la auditoría; el rol soporte puede consultar el estado de pedidos y envíos, sin permisos sobre catálogo ni compras.
+**RN.13:** El rol depósito gestiona las compras a proveedores y confirma el despacho de pedidos (lo que dispara la salida de stock); el rol administrador gestiona el catálogo (productos, categorías, proveedores, precios, alícuotas de IVA, promociones, slides, multimedia y especificaciones), la administración de usuarios (creación de cuentas), y tiene acceso de solo lectura a la auditoría; el rol soporte puede consultar el estado de pedidos y envíos, sin permisos sobre catálogo ni compras.
 
 **RN.14:** Los cambios sobre datos sensibles (precios, stock, pedidos, compras, facturación) quedan registrados en la auditoría, identificando el usuario responsable, la operación realizada y la fecha.
 
@@ -43,3 +43,15 @@
 **RN.21:** Toda factura queda asociada al usuario que la emitió, para su trazabilidad en la auditoría.
 
 **RN.22:** Al confirmar el despacho de un pedido, el sistema registra qué usuario del rol depósito realizó esa gestión.
+
+**RN.23:** Una promoción se registra con nombre, descripción, fecha de inicio y fecha de fin (la fecha de fin no puede ser anterior a la de inicio). Puede ofrecer un porcentaje de descuento (mayor a 0 y hasta 75), cuotas sin interés (entre 2 y 36), o ambos, pero al menos uno de los dos beneficios.
+
+**RN.24:** Una promoción puede aplicarse a uno o varios productos, y un producto puede participar en varias promociones a lo largo del tiempo. Si un producto tiene más de una promoción vigente a la vez, se aplica la de mayor descuento. El precio final con descuento queda congelado en el detalle del pedido al confirmarse la venta (complementa RN.03 y RN.19).
+
+**RN.25:** Una promoción puede tener ninguno, uno o varios slides (banners), y cada slide pertenece a una única promoción.
+
+**RN.26:** Un producto puede tener ninguno, uno o varios archivos multimedia (imágenes o videos) identificados por su URL, y cada archivo pertenece a un único producto.
+
+**RN.27:** Las especificaciones técnicas forman un catálogo con nombre único. Cada producto puede tener varias especificaciones, y cada una registra un valor propio para ese producto (por ejemplo, especificación "Tamaño de pantalla", valor "50 pulgadas").
+
+**RN.28:** Las alícuotas de IVA se registran en un catálogo único y cada producto tiene asignada una alícuota de ese catálogo. Por el rubro de la tienda, los productos solo utilizan la alícuota general (21 %) o la reducida (10,5 %). Al confirmarse una venta, el porcentaje vigente se copia en el detalle del pedido y no se modifica aunque el catálogo cambie después (complementa RN.19).
