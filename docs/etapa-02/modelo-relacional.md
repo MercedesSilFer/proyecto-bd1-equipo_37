@@ -206,6 +206,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 |---|---|---|
 | cod_multimedia | INT | PK |
 | url | VARCHAR | UQ |
+| tipo | VARCHAR | CHECK (imagen, video) |
 | cod_producto | INT | FK -> producto |
 
 ### especificacion
@@ -447,6 +448,7 @@ erDiagram
     MULTIMEDIA {
         INT cod_multimedia PK
         VARCHAR url UK
+        VARCHAR tipo
         INT cod_producto FK
     }
 

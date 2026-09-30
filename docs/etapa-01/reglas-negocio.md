@@ -50,7 +50,7 @@
 
 **RN.25:** Una promoción puede tener ninguno, uno o varios slides (banners), y cada slide pertenece a una única promoción.
 
-**RN.26:** Un producto puede tener ninguno, uno o varios archivos multimedia (imágenes o videos) identificados por su URL, y cada archivo pertenece a un único producto.
+**RN.26:** Un producto puede tener ninguno, uno o varios archivos multimedia (imágenes o videos) identificados por su URL y su tipo (imagen o video), y cada archivo pertenece a un único producto.
 
 **RN.27:** Las especificaciones técnicas forman un catálogo con nombre único. Cada producto puede tener varias especificaciones, y cada una registra un valor propio para ese producto (por ejemplo, especificación "Tamaño de pantalla", valor "50 pulgadas").
 
