@@ -14,14 +14,12 @@ CREATE TABLE cliente
   ciudad VARCHAR(50) NOT NULL,
   provincia VARCHAR(50) NOT NULL,
   cod_postal VARCHAR(10) NOT NULL,
-  fecha_registro DATE NOT NULL,
-  activo BIT NOT NULL,
+  fecha_registro DATE NOT NULL CONSTRAINT DF_cliente_fecha_registro DEFAULT CAST(GETDATE() AS DATE),
+  activo BIT NOT NULL CONSTRAINT DF_cliente_activo DEFAULT 1,
   telefono VARCHAR (20) NOT NULL,
   CONSTRAINT UQ_cliente_email UNIQUE (email),
-  CONSTRAINT DF_cliente_activo DEFAULT 1 FOR activo,
   CONSTRAINT CK_cliente_estado CHECK(activo IN (0,1)),
   CONSTRAINT CK_cliente_email CHECK (email LIKE '%_@__%.__%'),
-  CONSTRAINT DF_cliente_fecha_registro DEFAULT CAST(GETDATE() AS DATE) FOR fecha_registro,
   CONSTRAINT CK_cliente_provincia CHECK (UPPER(provincia) IN ('BUENOS AIRES', 'CATAMARCA', 'CHACO', 'CHUBUT', 
                                                               'CIUDAD AUTÓNOMA DE BUENOS AIRES','CÓRDOBA', 'CORRIENTES', 
                                                               'ENTRE RÍOS', 'FORMOSA', 'JUJUY', 'LA PAMPA', 'LA RIOJA', 'MENDOZA', 
@@ -36,11 +34,10 @@ CREATE TABLE usuario
   nombre_usuario VARCHAR(50) NOT NULL,
   contrasena_hash VARCHAR(255) NOT NULL,
   rol VARCHAR(20) NOT NULL,
-  estado BIT NOT NULL,
+  estado BIT NOT NULL CONSTRAINT DF_usuario_estado DEFAULT 1,
   CONSTRAINT UQ_usuario_nombre_usuario UNIQUE (nombre_usuario), 
   CONSTRAINT CK_usuario_rol CHECK(UPPER(rol) IN ('DEPOSITO', 'ADMINISTRADOR', 'SOPORTE') AND rol = UPPER(rol)),
-  CONSTRAINT CK_usuario_estado CHECK(estado IN (0,1)),
-  CONSTRAINT DF_usuario_estado DEFAULT 1 FOR estado
+  CONSTRAINT CK_usuario_estado CHECK(estado IN (0,1))
 );
 GO
 CREATE TABLE categoria
@@ -48,16 +45,15 @@ CREATE TABLE categoria
   cod_categoria INT IDENTITY CONSTRAINT PK_categoria PRIMARY KEY,
   nombre VARCHAR(50) NOT NULL,
   cod_categoria_padre INT NULL, --para una jerarquía
-  activo BIT NOT NULL,
+  activo BIT NOT NULL CONSTRAINT DF_categoria_activo DEFAULT 1,
   CONSTRAINT UQ_categoria_nombre_padre UNIQUE (nombre, cod_categoria_padre),
   CONSTRAINT FK_categoria_categoria_padre FOREIGN KEY (cod_categoria_padre) REFERENCES categoria(cod_categoria) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT DF_categoria_activo DEFAULT 1 FOR activo,
   CONSTRAINT CK_categoria_estado CHECK(activo IN (0,1))
 );
 GO
 CREATE TABLE alicuota_iva
 (
-  cod_alicuota INT CONSTRAINT PK_alicuota_iva PRIMARY KEY, --código oficial de ARCA, sin IDENTITY
+  cod_alicuota INT CONSTRAINT PK_alicuota_iva PRIMARY KEY,
   nombre VARCHAR(50) NOT NULL,
   porcentaje DECIMAL(4,2) NOT NULL,
   CONSTRAINT UQ_alicuota_iva_nombre UNIQUE (nombre),
@@ -74,10 +70,9 @@ CREATE TABLE producto
   cod_alicuota INT NOT NULL,
   stock INT NOT NULL,
   cod_categoria INT NOT NULL,
-  activo BIT NOT NULL,
+  activo BIT NOT NULL CONSTRAINT DF_producto_activo DEFAULT 1,
   CONSTRAINT FK_producto_categoria FOREIGN KEY (cod_categoria) REFERENCES categoria(cod_categoria) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT FK_producto_alicuota_iva FOREIGN KEY (cod_alicuota) REFERENCES alicuota_iva(cod_alicuota) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT DF_producto_activo DEFAULT 1 FOR activo,
   CONSTRAINT CK_producto_estado CHECK(activo IN (0,1)),
   CONSTRAINT CK_producto_precio_lista CHECK (precio_lista > 0),
   CONSTRAINT CK_producto_stock CHECK (stock >= 0)
@@ -92,7 +87,7 @@ CREATE TABLE proveedor
   numero VARCHAR(10) NOT NULL,
   ciudad VARCHAR(50) NOT NULL,
   provincia VARCHAR(50) NOT NULL,
-  activo BIT NOT NULL,
+  activo BIT NOT NULL CONSTRAINT DF_proveedor_activo DEFAULT 1,
   CONSTRAINT UQ_proveedor_cuit UNIQUE (cuit),
   CONSTRAINT CK_proveedor_cuit CHECK (cuit LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'),
   CONSTRAINT CK_proveedor_provincia CHECK (UPPER(provincia) IN ('BUENOS AIRES', 'CATAMARCA', 'CHACO', 'CHUBUT', 
@@ -101,7 +96,6 @@ CREATE TABLE proveedor
                                                               'MISIONES', 'NEUQUÉN', 'RÍO NEGRO', 'SALTA', 'SAN JUAN', 'SAN LUIS', 
                                                               'SANTA CRUZ', 'SANTA FE', 'SANTIAGO DEL ESTERO', 'TIERRA DEL FUEGO', 'TUCUMÁN') 
                                          AND provincia = UPPER(provincia)),
-CONSTRAINT DF_proveedor_activo DEFAULT 1 FOR activo,
   CONSTRAINT CK_proveedor_estado CHECK(activo IN (0,1))
 );
 GO
@@ -115,9 +109,9 @@ GO
 CREATE TABLE pedido
 (
   cod_pedido INT IDENTITY CONSTRAINT PK_pedido PRIMARY KEY,
-  fecha_pedido DATETIME NOT NULL,
-  estado VARCHAR(20) NOT NULL,
-  estado_pago VARCHAR(20) NOT NULL,
+  fecha_pedido DATETIME NOT NULL CONSTRAINT DF_pedido_fecha_pedido DEFAULT GETDATE(),
+  estado VARCHAR(20) NOT NULL CONSTRAINT DF_pedido_estado DEFAULT 'pendiente',
+  estado_pago VARCHAR(20) NOT NULL CONSTRAINT DF_pedido_estado_pago DEFAULT 'pendiente',
   ref_transaccion VARCHAR(50) NULL,
   calle  VARCHAR(50) NOT NULL,
   numero VARCHAR(10) NOT NULL,
@@ -132,9 +126,6 @@ CREATE TABLE pedido
   cod_cliente INT NOT NULL,
   cod_metodo_pago INT NOT NULL,
   cod_usuario INT NULL,
-  CONSTRAINT DF_pedido_fecha_pedido DEFAULT GETDATE() FOR fecha_pedido,
-  CONSTRAINT DF_pedido_estado DEFAULT 'pendiente' FOR estado,
-  CONSTRAINT DF_pedido_estado_pago DEFAULT 'pendiente' FOR estado_pago,
   CONSTRAINT CK_pedido_estado CHECK (estado IN ('pendiente', 'confirmado', 'cancelado')),
   CONSTRAINT CK_pedido_estado_pago CHECK (estado_pago IN ('pendiente', 'aprobado', 'rechazado')),
   CONSTRAINT CK_pedido_estado_envio CHECK (estado_envio IS NULL OR estado_envio IN ('pendiente', 'despachado', 'entregado')),
@@ -149,16 +140,14 @@ GO
 CREATE TABLE compra
 (
   cod_compra INT IDENTITY CONSTRAINT PK_compra PRIMARY KEY,
-  fecha DATETIME NOT NULL,
-  estado VARCHAR(20) NOT NULL,
+  fecha DATETIME NOT NULL CONSTRAINT DF_compra_fecha DEFAULT GETDATE(),
+  estado VARCHAR(20) NOT NULL CONSTRAINT DF_compra_estado DEFAULT 'pendiente',
   nro_comprobante_prov VARCHAR(50) NULL,
   cod_proveedor INT NOT NULL,
   cod_usuario INT NOT NULL,
   CONSTRAINT FK_compra_proveedor FOREIGN KEY (cod_proveedor) REFERENCES proveedor(cod_proveedor) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT FK_compra_usuario  FOREIGN KEY (cod_usuario) REFERENCES usuario(cod_usuario) ON DELETE NO ACTION ON UPDATE CASCADE,
-  CONSTRAINT DF_compra_estado DEFAULT 'pendiente' FOR estado,
   CONSTRAINT CK_compra_estado CHECK (estado IN ('pendiente', 'recibida', 'cancelada')),
-  CONSTRAINT DF_compra_fecha DEFAULT GETDATE() FOR fecha,
   CONSTRAINT CK_compra_fecha CHECK (fecha <= GETDATE())
 );
 GO
@@ -168,13 +157,12 @@ CREATE TABLE auditoria
   entidad VARCHAR(50) NOT NULL,
   operacion VARCHAR(10) NOT NULL,
   registro_id INT NOT NULL,
-  fecha DATETIME NOT NULL,
+  fecha DATETIME NOT NULL CONSTRAINT DF_auditoria_fecha DEFAULT GETDATE(),
   valor_anterior VARCHAR(255) NULL,
   valor_nuevo VARCHAR(255) NULL,
   cod_usuario INT NOT NULL,
   CONSTRAINT FK_auditoria_usuario FOREIGN KEY (cod_usuario) REFERENCES usuario(cod_usuario) ON DELETE NO ACTION ON UPDATE CASCADE,
-  CONSTRAINT CK_auditoria_operacion CHECK (operacion IN ('INSERT', 'UPDATE', 'DELETE')),
-  CONSTRAINT DF_auditoria_fecha DEFAULT GETDATE() FOR fecha
+  CONSTRAINT CK_auditoria_operacion CHECK (operacion IN ('INSERT', 'UPDATE', 'DELETE'))
 );
 GO
 CREATE TABLE factura
@@ -182,7 +170,7 @@ CREATE TABLE factura
   cod_factura INT IDENTITY CONSTRAINT PK_factura PRIMARY KEY,
   tipo_comprobante CHAR(1) NOT NULL,
   numero INT NOT NULL,
-  fecha_emision DATE NOT NULL,
+  fecha_emision DATE NOT NULL CONSTRAINT DF_factura_fecha_emision DEFAULT CAST(GETDATE() AS DATE),
   cond_iva_cliente VARCHAR(30) NOT NULL,
   subtotal DECIMAL(12,2) NOT NULL,
   iva_total DECIMAL(12,2) NOT NULL,
@@ -198,7 +186,6 @@ CREATE TABLE factura
   CONSTRAINT FK_factura_pedido FOREIGN KEY (cod_pedido) REFERENCES pedido(cod_pedido) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT FK_factura_usuario FOREIGN KEY (cod_usuario) REFERENCES usuario(cod_usuario) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT CK_factura_montos CHECK (subtotal >= 0 AND iva_total >= 0 AND total >= 0),
-  CONSTRAINT DF_factura_fecha_emision DEFAULT CAST(GETDATE() AS DATE) FOR fecha_emision,
   CONSTRAINT CK_factura_tipo_comprobante CHECK (tipo_comprobante IN ('A','B','C')),
   CONSTRAINT UQ_factura_pto_nro UNIQUE (punto_venta, numero)
 );
