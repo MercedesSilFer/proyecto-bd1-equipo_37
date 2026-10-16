@@ -36,20 +36,22 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | nombre | VARCHAR | |
 | apellido | VARCHAR | |
 | email | VARCHAR | UQ |
-| contraseña | VARCHAR | |
+| contrasena_hash | VARCHAR | |
 | calle | VARCHAR | |
 | numero | VARCHAR | |
 | ciudad | VARCHAR | |
 | provincia | VARCHAR | |
 | cod_postal | VARCHAR | |
-| fecha_registro | DATETIME | |
+| fecha_registro | DATE | |
+| activo | BIT | |
+| telefono | VARCHAR | |
 
 ### usuario
 | Columna | Tipo Dato| Restricción |
 |---|---|---|
 | cod_usuario | INT | PK |
 | nombre_usuario | VARCHAR | UQ |
-| contraseña | VARCHAR | |
+| contrasena_hash | VARCHAR | |
 | rol | VARCHAR | |
 | estado | BIT | |
 
@@ -57,7 +59,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | Columna | Tipo Dato| Restricción |
 |---|---|---|
 | cod_metodo_pago | INT | PK |
-| nombre | VARCHAR | |
+| nombre | VARCHAR | UQ |
 
 ### pedido
 | Columna | Tipo Dato| Restricción |
@@ -75,7 +77,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | estado_envio | VARCHAR | Opcional |
 | fecha_envio | DATETIME | Opcional |
 | transportista | VARCHAR | Opcional |
-| fecha_entrega | DATETIME | Opcional |
+| fecha_entrega | DATE | Opcional |
 | nro_seguimiento | VARCHAR | Opcional |
 | cod_cliente | INT | FK -> cliente |
 | cod_metodo_pago | INT | FK -> metodo_pago |
@@ -85,7 +87,9 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | Columna | Tipo Dato| Restricción |
 |---|---|---|
 | cod_categoria | INT | PK |
-| nombre | VARCHAR | UQ|
+| nombre | VARCHAR | UQ (nombre, cod_categoria_padre) |
+| cod_categoria_padre | INT | FK -> categoria, Opcional |
+| activo | BIT | |
 
 ### producto
 | Columna | Tipo Dato| Restricción |
@@ -97,6 +101,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | cod_alicuota | INT | FK -> alicuota_iva |
 | stock | INT | |
 | cod_categoria | INT | FK -> categoria |
+| activo | BIT | |
 
 ### detalle_pedido
 | Columna | Tipo Dato| Restricción |
@@ -119,6 +124,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | numero | VARCHAR | |
 | ciudad | VARCHAR | |
 | provincia | VARCHAR | |
+| activo | BIT | |
 
 ### compra
 | Columna | Tipo | Restricción |
@@ -142,20 +148,20 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | Columna | Tipo | Restricción |
 |---|---|---|
 | cod_factura | INT | PK |
-| tipo_comprobante | VARCHAR | |
-| numero | VARCHAR | |
-| fecha_emision | DATETIME | |
+| tipo_comprobante | CHAR | |
+| numero | INT | |
+| fecha_emision | DATE | |
 | cond_iva_cliente | VARCHAR | |
 | tipo_documento_cliente | VARCHAR | Opcional |
 | nro_documento_cliente | VARCHAR | Opcional |
 | razon_social | VARCHAR | Opcional |
-| punto_venta | VARCHAR | |
+| punto_venta | INT | |
 | subtotal | DECIMAL | |
 | iva_total | DECIMAL | |
 | total | DECIMAL | |
 | cae | VARCHAR | |
-| fecha_vto_cae | DATETIME | |
-| cod_pedido | INT | FK → pedido |
+| fecha_vto_cae | DATE | |
+| cod_pedido | INT | FK → pedido, UQ |
 | cod_usuario | INT | FK → usuario |
 
 ### auditoria
@@ -246,7 +252,9 @@ alicuota_iva (1) — producto (N) -> producto.cod_alicuota FK,
 promocion (1) — slide (N) -> slide.cod_promocion FK,
 producto (1) — multimedia (N) -> multimedia.cod_producto FK.
 
-Relación 1:1 opcional: pedido (1) — factura (0..1). La FK se ubica en el lado de cardinalidad obligatoria hacia el otro, es decir en `factura` (factura.cod_pedido), ya que toda factura requiere obligatoriamente un pedido, mientras que un pedido puede no tener factura todavía (por ejemplo, si todavía no fue facturado).
+Relación recursiva 1:N (opcional): categoria (0..1) — categoria (N) -> categoria.cod_categoria_padre FK (Opcional), que referencia a la misma tabla para representar la jerarquía categoría–subcategoría (por ejemplo, "Audio" dentro de "Electrónica"). Las categorías de primer nivel tienen cod_categoria_padre en NULL.
+
+Relación 1:1 opcional: pedido (1) — factura (0..1). La FK se ubica en el lado de cardinalidad obligatoria hacia el otro, es decir en `factura` (factura.cod_pedido), ya que toda factura requiere obligatoriamente un pedido, mientras que un pedido puede no tener factura todavía (por ejemplo, si todavía no fue facturado). Para que la relación sea efectivamente 1:1, factura.cod_pedido lleva además una restricción UNIQUE (RN.17).
 
 Relación N:M: La relación pedido — producto (`contiene`) pasa a ser la tabla `detalle_pedido`, cuya PK combina las FK de ambas entidades participantes (cod_pedido, cod_producto).
 La relación compra — producto (`incluye`) pasa a ser la tabla `detalle_compra`, cuya PK combina las FK de ambas entidades participantes (cod_compra, cod_producto).
@@ -273,6 +281,7 @@ erDiagram
     PEDIDO ||--|{ DETALLE_PEDIDO : contiene
     PRODUCTO ||--o{ DETALLE_PEDIDO : "incluido en"
     CATEGORIA ||--o{ PRODUCTO : pertenece
+    CATEGORIA |o--o{ CATEGORIA : "subcategoria de"
     PEDIDO ||--o| FACTURA : emite
     USUARIO ||--o{ FACTURA : confecciona
     PROVEEDOR ||--o{ COMPRA : provee
@@ -294,26 +303,30 @@ erDiagram
         VARCHAR nombre
         VARCHAR apellido
         VARCHAR email UK
-        VARCHAR contraseña
+        VARCHAR contrasena_hash
         VARCHAR calle
         VARCHAR numero
         VARCHAR ciudad
         VARCHAR provincia
         VARCHAR cod_postal
-        DATETIME fecha_registro
+        DATE fecha_registro
+        BIT activo
+        VARCHAR telefono
         }
         
         USUARIO {
         INT cod_usuario PK
         VARCHAR nombre_usuario UK
-        VARCHAR contraseña
+        VARCHAR contrasena_hash
         VARCHAR rol
         BIT estado
     }
 
     CATEGORIA {
         INT cod_categoria PK
-        VARCHAR nombre UK
+        VARCHAR nombre UK "UK compuesta con cod_categoria_padre"
+        INT cod_categoria_padre FK "O"
+        BIT activo
     }
 
     PRODUCTO {
@@ -324,11 +337,12 @@ erDiagram
         INT cod_alicuota FK
         INT stock
         INT cod_categoria FK
+        BIT activo
     } 
 
     METODO_PAGO {
         INT cod_metodo_pago PK
-        VARCHAR  nombre
+        VARCHAR  nombre UK
     }
 
     PEDIDO {
@@ -345,7 +359,7 @@ erDiagram
         VARCHAR estado_envio "O"
         DATETIME fecha_envio "O"
         VARCHAR transportista "O"
-        DATETIME fecha_entrega "O"
+        DATE fecha_entrega "O"
         VARCHAR nro_seguimiento "O"
         INT cod_cliente FK
         INT cod_metodo_pago FK
@@ -370,6 +384,7 @@ erDiagram
         VARCHAR numero
         VARCHAR ciudad
         VARCHAR provincia
+        BIT activo
     }
 
     COMPRA {
@@ -390,20 +405,20 @@ erDiagram
 
     FACTURA {
         INT cod_factura PK
-        VARCHAR tipo_comprobante
-        VARCHAR numero
-        DATETIME fecha_emision
+        CHAR tipo_comprobante
+        INT numero
+        DATE fecha_emision
         VARCHAR cond_iva_cliente
         VARCHAR tipo_documento_cliente "O"
         VARCHAR nro_documento_cliente "O"
         VARCHAR razon_social "O"
-        VARCHAR punto_venta
+        INT punto_venta
         DECIMAL subtotal
         DECIMAL iva_total
         DECIMAL total
         VARCHAR cae
-        DATETIME fecha_vto_cae
-        INT cod_pedido FK
+        DATE fecha_vto_cae
+        INT cod_pedido FK,UK
         INT cod_usuario FK
     }
 
