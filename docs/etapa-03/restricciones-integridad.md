@@ -28,13 +28,17 @@
 
 ### producto
 - **PRIMARY KEY:** cod_producto.
-- **FOREIGN KEY:** cod_categoria → categoria.cod_categoria.
+- **FOREIGN KEY:** cod_categoria → categoria.cod_categoria, cod_alicuota → alicuota_iva.cod_alicuota.
 - **CHECK:**
   - activo IN (0,1).
   - precio_lista > 0.
   - stock >= 0.
-  - alicuota_iva BETWEEN 0 AND 100.
 - **DEFAULT:** activo = 1.
+
+### alicuota_iva
+- **PRIMARY KEY:** cod_alicuota (sin IDENTITY: se usa el código oficial de ARCA).
+- **UNIQUE:** nombre, porcentaje.
+- **CHECK:** porcentaje >= 0 AND porcentaje < 100.
 
 ### proveedor
 - **PRIMARY KEY:** cod_proveedor.
@@ -77,7 +81,9 @@
 ### factura
 - **PRIMARY KEY:** cod_factura.
 - **FOREIGN KEY:** cod_pedido → pedido, cod_usuario → usuario.
-- **UNIQUE:** combinación (punto_venta, numero), un mismo número de comprobante no puede repetirse dentro del mismo punto de venta.
+- **UNIQUE:**
+  - combinación (punto_venta, numero), un mismo número de comprobante no puede repetirse dentro del mismo punto de venta.
+  - cod_pedido, cada pedido tiene como máximo una factura (relación 1:0..1, RN.17).
 - **CHECK:**
   - subtotal >= 0 AND iva_total >= 0 AND total >= 0.
   - tipo_comprobante IN ('A','B','C').
@@ -93,6 +99,39 @@
 - **FOREIGN KEY:** cod_producto → producto, cod_compra → compra.
 - **CHECK:** cantidad > 0, costo_unitario > 0.
 
+### promocion
+- **PRIMARY KEY:** cod_promocion.
+- **CHECK:**
+  - fecha_fin >= fecha_inicio.
+  - porcentaje_descuento > 0 AND porcentaje_descuento <= 75.
+  - nro_cuotas BETWEEN 2 AND 36.
+  - porcentaje_descuento IS NOT NULL OR nro_cuotas IS NOT NULL, toda promoción ofrece al menos un beneficio (RN.23).
+
+### promocion_producto
+- **PRIMARY KEY compuesta:** (cod_promocion, cod_producto).
+- **FOREIGN KEY:** cod_promocion → promocion, cod_producto → producto.
+
+### slide
+- **PRIMARY KEY:** cod_slide.
+- **FOREIGN KEY:** cod_promocion → promocion.
+- **UNIQUE:** url.
+- **CHECK:** url LIKE 'https://%'.
+
+### multimedia
+- **PRIMARY KEY:** cod_multimedia.
+- **FOREIGN KEY:** cod_producto → producto.
+- **UNIQUE:** url.
+- **CHECK:** url LIKE 'https://%', tipo IN ('imagen', 'video').
+
+### especificacion
+- **PRIMARY KEY:** cod_especificacion.
+- **UNIQUE:** nombre.
+
+### especificacion_producto
+- **PRIMARY KEY compuesta:** (cod_producto, cod_especificacion).
+- **FOREIGN KEY:** cod_producto → producto, cod_especificacion → especificacion.
+- **CHECK:** LEN(valor) > 0.
+
 ## 2. Reglas de borrado y modificación (ON DELETE / ON UPDATE)
 
 | # | Relación (FK) | ON DELETE | ON UPDATE | Justificación |
@@ -101,7 +140,7 @@
 | 2 | producto.cod_categoria → categoria.cod_categoria | NO ACTION | CASCADE | No se permite eliminar una categoría con productos asociados; se usa baja lógica (activo) en su lugar. |
 | 3 | pedido.cod_cliente → cliente.cod_cliente | NO ACTION | CASCADE | Un cliente con pedidos no puede borrarse físicamente: se preserva el historial de ventas y datos fiscales. Se da de baja lógica (activo = 0). |
 | 4 | pedido.cod_metodo_pago → metodo_pago.cod_metodo_pago | NO ACTION | CASCADE | No se puede eliminar un método de pago ya utilizado en algún pedido, para no perder la trazabilidad de cómo se abonó esa venta. |
-| 5 | pedido.cod_usuario → usuario.cod_usuario | NO ACTION | CASCADE | No se puede eliminar un usuario interno que ya gestionó pedidos; se usa baja lógica (estado), preservando la trazabilidad de auditoría. |
+| 5 | pedido.cod_usuario → usuario.cod_usuario | NO ACTION | NO ACTION | No se puede eliminar un usuario interno que ya gestionó pedidos; se usa baja lógica (estado), preservando la trazabilidad de auditoría. No se usa CASCADE en UPDATE porque SQL Server lo rechaza por rutas múltiples: factura ya recibe la cascada de usuario directamente (caso 10) y a través de pedido (caso 9). |
 | 6 | compra.cod_proveedor → proveedor.cod_proveedor | NO ACTION | CASCADE | No se puede eliminar un proveedor con historial de compras; se da de baja lógica si se deja de operar con él. |
 | 7 | compra.cod_usuario → usuario.cod_usuario | NO ACTION | CASCADE | Protege la trazabilidad de qué usuario registró cada compra. |
 | 8 | auditoria.cod_usuario → usuario.cod_usuario | NO ACTION | CASCADE | Un registro de auditoría nunca puede quedar sin el usuario responsable del cambio que audita. |
@@ -110,11 +149,18 @@
 | 11 | detalle_pedido.cod_pedido → pedido.cod_pedido | **CASCADE** | CASCADE | Relación de composición: una línea de detalle no tiene existencia propia sin su pedido. Si se elimina un pedido, sus líneas se eliminan junto con él. |
 | 12 | detalle_pedido.cod_producto → producto.cod_producto | NO ACTION | CASCADE | No se puede eliminar un producto con ventas registradas; protege el historial de qué se vendió. |
 | 13 | detalle_compra.cod_compra → compra.cod_compra | **CASCADE** | CASCADE | Relación de composición, mismo criterio que el caso 11: una línea de detalle de compra no existe sin su compra asociada. |
-| 14 | detalle_compra.cod_producto → producto.cod_producto | NO ACTION | CASCADE | No se puede eliminar un producto con compras registradas; protege el historial de qué se compró. |
+| 14 | detalle_compra.cod_producto → producto.cod_producto | NO ACTION | NO ACTION | No se puede eliminar un producto con compras registradas; protege el historial de qué se compró. |
+| 15 | producto.cod_alicuota → alicuota_iva.cod_alicuota | NO ACTION | NO ACTION | El código de la alícuota es el oficial de ARCA y no debe cambiar; no se puede eliminar una alícuota asignada a productos. |
+| 16 | promocion_producto.cod_promocion → promocion.cod_promocion | **CASCADE** | CASCADE | Tabla intermedia: si se elimina una promoción, se eliminan sus vínculos con productos. |
+| 17 | promocion_producto.cod_producto → producto.cod_producto | **CASCADE** | CASCADE | Mismo criterio: el vínculo no tiene sentido sin el producto. |
+| 18 | slide.cod_promocion → promocion.cod_promocion | **CASCADE** | CASCADE | Un slide (banner) solo existe para publicitar su promoción (RN.25). |
+| 19 | multimedia.cod_producto → producto.cod_producto | **CASCADE** | CASCADE | Las imágenes y videos pertenecen a un único producto (RN.26). |
+| 20 | especificacion_producto.cod_producto → producto.cod_producto | **CASCADE** | CASCADE | El valor de una especificación depende del producto (RN.27). |
+| 21 | especificacion_producto.cod_especificacion → especificacion.cod_especificacion | NO ACTION | CASCADE | No se puede eliminar del catálogo una especificación que usan productos. |
 
 ### Criterio general aplicado
 
 - **`NO ACTION` en DELETE:** se aplica en toda relación hacia una entidad "maestra" con valor histórico o fiscal (cliente, usuario, producto, proveedor, metodo_pago, pedido). Impide el borrado físico y obliga a resolver la baja mediante los campos activo/estado ya definidos en esas tablas.
-- **CASCADE en DELETE:** se aplica únicamente en las dos relaciones de composición real (detalle_pedido con pedido, detalle_compra con compra), donde el registro hijo no tiene sentido de existencia independiente del padre.
-- **CASCADE en UPDATE:** se aplica de forma uniforme en todas las relaciones. Si bien las claves primarias son IDENTITY y no cambian en la operatoria normal, es la convención estándar recomendada, y no genera los conflictos de rutas múltiples que sí puede generar CASCADE en DELETE.
-- **Excepción técnica:** la autorreferencia de categoria usa NO ACTION/NO ACTION en ambos casos, por ser la única opción que SQL Server permite en una relación de una tabla consigo misma.
+- **CASCADE en DELETE:** se aplica en las relaciones de composición (detalle_pedido con pedido, detalle_compra con compra) y en las tablas dependientes del catálogo y las promociones (promocion_producto, slide, multimedia, especificacion_producto), donde el registro hijo no tiene sentido de existencia independiente del padre.
+- **CASCADE en UPDATE:** se aplica en la mayoría de las relaciones. Si bien las claves primarias son IDENTITY y no cambian en la operatoria normal, es la convención estándar recomendada.
+- **Excepciones técnicas:** la autorreferencia de categoria usa NO ACTION/NO ACTION, por ser la única opción que SQL Server permite en una relación de una tabla consigo misma; pedido.cod_usuario usa NO ACTION en UPDATE para evitar rutas múltiples de cascada hacia factura; producto.cod_alicuota y detalle_compra.cod_producto conservan el comportamiento por defecto (NO ACTION).

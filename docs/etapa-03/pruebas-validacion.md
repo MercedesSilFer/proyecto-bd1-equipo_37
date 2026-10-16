@@ -12,7 +12,7 @@ Este documento reúne casos de prueba diseñados para verificar que las restricc
 | 4 | Insertar un "usuario con rol = 'vendedor' | Falla el INSERT | CK_usuario_rol (rol no contemplado en el modelo) |
 | 5 | Insertar un "producto" con precio_lista = -100 | Falla el INSERT | CK_producto_precio_lista |
 | 6 | Insertar un "producto" con stock = -5 | Falla el INSERT | CK_producto_stock |
-| 7 | Insertar un "producto" con alicuota_iva = 150 | Falla el INSERT | CK_producto_alicuota (fuera del rango 0-100) |
+| 7 | Insertar una "alicuota_iva" con porcentaje = -5 | Falla el INSERT | CK_alicuota_iva_porcentaje (fuera del rango 0-100) |
 | 8 | Insertar un "proveedor" con cuit = '301234567' (sin guiones ni dígito verificador) | Falla el INSERT | CK_proveedor_cuit |
 | 9 | Insertar un "pedido" con estado = 'en_proceso' (valor no contemplado) | Falla el INSERT | CK_pedido_estado |
 | 10 | Insertar un "pedido" con estado_pago = 'aprobado' y ref_transaccion = NULL | Falla el INSERT | CK_pedido_ref_transaccion |
@@ -31,6 +31,7 @@ Este documento reúne casos de prueba diseñados para verificar que las restricc
 | 18 | Insertar dos "proveedor" con el mismo cuit | Falla el segundo INSERT | UQ_proveedor_cuit |
 | 19 | Insertar dos "factura" con el mismo punto_venta y numero | Falla el segundo INSERT | UQ_factura_pto_nro |
 | 20 | Insertar dos "categoria" con el mismo nombre bajo el mismo cod_categoria_padre | Falla el segundo INSERT | UQ_categoria_nombre_padre |
+| 34 | Insertar dos "factura" para el mismo cod_pedido | Falla el segundo INSERT | UQ_factura_pedido (un único comprobante por pedido, RN.17) |
 
 ## 3. Restricciones NOT NULL / valores por defecto
 
@@ -58,7 +59,7 @@ Este documento reúne casos de prueba diseñados para verificar que las restricc
 | 30 | Intentar eliminar una "categoria" que tiene subcategorías asociadas (cod_categoria_padre) | Falla el DELETE | FK_categoria_categoria_padre con ON DELETE NO ACTION |
 | 31 | Eliminar un "pedido" de prueba sin factura asociada | Se elimina el pedido y, en cascada, sus líneas de detalle_pedido | FK_detalle_pedido_pedido con ON DELETE CASCADE |
 | 32 | Eliminar una "compra" de prueba | Se elimina la compra y, en cascada, sus líneas de detalle_compra | FK_detalle_compra_compra con ON DELETE CASCADE |
-| 33 | Intentar eliminar una "factura" existente | Falla el DELETE | FK_factura_pedido con ON DELETE NO ACTION (inmutabilidad fiscal) |
+| 33 | Intentar eliminar un "pedido" que tiene factura asociada | Falla el DELETE | FK_factura_pedido con ON DELETE NO ACTION (inmutabilidad fiscal) |
 
 ## Observación general
 
