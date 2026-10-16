@@ -2,7 +2,7 @@
 
 **Archivo:** [consulta_avanzada.sql](../../sql/consultas/consulta_avanzada.sql)
 
-Se desarrollan 13 consultas que combinan tablas mediante "JOIN" y aplican filtros condicionales con "HAVING" y subconsultas:
+Se desarrollan 13 consultas que combinan tablas mediante "JOIN" y/o subconsultas y aplican filtros condicionales con "HAVING" y subconsultas. Las consultas 1, 2, 3 y 9 combinan al menos 3 tablas mediante "JOIN":
 
 
 | Consulta | Necesidad | Tipo de subconsulta |
