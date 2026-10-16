@@ -187,7 +187,8 @@ CREATE TABLE factura
   CONSTRAINT FK_factura_usuario FOREIGN KEY (cod_usuario) REFERENCES usuario(cod_usuario) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT CK_factura_montos CHECK (subtotal >= 0 AND iva_total >= 0 AND total >= 0),
   CONSTRAINT CK_factura_tipo_comprobante CHECK (tipo_comprobante IN ('A','B','C')),
-  CONSTRAINT UQ_factura_pto_nro UNIQUE (punto_venta, numero)
+  CONSTRAINT UQ_factura_pto_nro UNIQUE (punto_venta, numero),
+  CONSTRAINT UQ_factura_pedido UNIQUE (cod_pedido)
 );
 GO
 CREATE TABLE detalle_pedido

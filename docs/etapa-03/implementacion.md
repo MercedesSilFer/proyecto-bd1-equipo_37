@@ -4,14 +4,14 @@
 
 Este documento corresponde a la Etapa III del proyecto "SmartHome Store", y contiene el script DDL (Data Definition Language) completo para la creación de la base de datos relacional, resultado del modelado conceptual y lógico desarrollado en las Etapas I y II.
 
-El esquema está compuesto por **12 relaciones**: cliente, usuario, categoria, producto, proveedor, metodo_pago, pedido, compra, auditoria, factura, detalle_pedido y detalle_compra.
+El esquema está compuesto por **19 relaciones**: cliente, usuario, categoria, alicuota_iva, producto, proveedor, metodo_pago, pedido, compra, auditoria, factura, detalle_pedido, detalle_compra, promocion, promocion_producto, slide, multimedia, especificacion y especificacion_producto.
 
 ## Criterios generales aplicados
 
 - **Tipos de datos:** se utilizó VARCHAR para todo dato de identificación o texto que no participa en cálculos aritméticos (DNI/CUIT, dirección, código postal, teléfono, email), reservando tipos numéricos (INT, DECIMAL) exclusivamente para cantidades, montos y valores que sí se operan.
 - **Montos y porcentajes:** se utilizó DECIMAL(p,s) en lugar de FLOAT/REAL para todo valor monetario o de alícuota de IVA, evitando errores de redondeo propios de los tipos de punto flotante aproximados, lo cual es crítico en un sistema de facturación.
 - **Baja lógica:** las tablas que representan entidades "maestras" con valor histórico (cliente, usuario, categoria, producto, proveedor) incorporan una columna de estado (activo/estado tipo BIT) en lugar de permitir su eliminación física, preservando la integridad de las tablas transaccionales que las referencian (pedidos, compras, facturas).
-- **Fechas:** se utilizó DATE en las tablas donde solo importa el día del registro (cliente, factura, compra), y DATETIME donde la hora exacta es relevante para la operatoria o la auditoría (pedido, auditoria).
+- **Fechas:** se utilizó DATE donde solo importa el día del registro (cliente.fecha_registro, factura.fecha_emision y fecha_vto_cae, pedido.fecha_entrega), y DATETIME donde la hora exacta es relevante para la operatoria o la auditoría (pedido.fecha_pedido y fecha_envio, compra.fecha, auditoria.fecha, vigencia de promocion).
 - **Restricciones de integridad:** cada tabla incorpora las restricciones PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK y DEFAULT correspondientes, detalladas en profundidad en "restricciones-integridad.md".
 
 ## Script DDL completo
@@ -206,7 +206,8 @@ CREATE TABLE factura
   CONSTRAINT FK_factura_usuario FOREIGN KEY (cod_usuario) REFERENCES usuario(cod_usuario) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT CK_factura_montos CHECK (subtotal >= 0 AND iva_total >= 0 AND total >= 0),
   CONSTRAINT CK_factura_tipo_comprobante CHECK (tipo_comprobante IN ('A','B','C')),
-  CONSTRAINT UQ_factura_pto_nro UNIQUE (punto_venta, numero)
+  CONSTRAINT UQ_factura_pto_nro UNIQUE (punto_venta, numero),
+  CONSTRAINT UQ_factura_pedido UNIQUE (cod_pedido)
 );
 GO
 CREATE TABLE detalle_pedido
