@@ -1,6 +1,6 @@
 # Consultas de negocio avanzadas
 
-**Archivo:** consulta_avanzada.sql
+**Archivo:** [consulta_avanzada.sql](../../sql/consulta_avanzada.sql)
 
 Se desarrollan 13 consultas que combinan tablas mediante "JOIN" y aplican filtros condicionales con "HAVING" y subconsultas:
 
