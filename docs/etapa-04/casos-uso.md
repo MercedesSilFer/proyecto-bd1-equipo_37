@@ -26,6 +26,7 @@ Se detalla el resumen de las necesidades de información que resuelve el sistema
 | CU-12 | Ver el estado del último pedido de cada cliente | Administrador, Soporte | `consulta_avanzada.sql` (12) | [consulta-avanzada.md](consulta-avanzada.md) |
 | CU-13 | Detectar facturas que superan el promedio de su tipo de comprobante | Administrador | `consulta_avanzada.sql` (13) | [consulta-avanzada.md](consulta-avanzada.md) |
 | CU-14 | Emitir el comprobante de una venta (encabezado y detalle con subtotales y total acumulado) | Administrador | `factura_comprobante.sql` (1 y 2) | [factura-comprobante.md](factura-comprobante.md) |
+| CU-15 | Conocer el total vendido por categoría de producto en un período | Administrador | `reporte_agregado.sql` (1 y 2) | [reporte-agregado.md](reporte-agregado.md) |
 
 *Los permisos definitivos por rol se establecen en la Etapa V (Seguridad).*
 
