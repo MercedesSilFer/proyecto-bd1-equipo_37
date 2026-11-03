@@ -186,7 +186,7 @@ GO
 -- Despues se repone el stock y se borran las dos filas de la
 -- prueba, para dejar la tabla como estaba.
 -- =============================================================
-DECLARE @antes1 INT = (SELECT COUNT(*) FROM auditoria);
+DECLARE @antes1 INT = (SELECT ISNULL(MAX(cod_auditoria), 0) FROM auditoria);
 
 EXEC sys.sp_set_session_context @key = N'cod_usuario', @value = 3;
 
@@ -217,7 +217,7 @@ GO
 -- Esperado: dos filas. En el INSERT valor_anterior es NULL; en el
 -- DELETE valor_nuevo es NULL. Las dos guardan precio y stock.
 -- =============================================================
-DECLARE @antes2 INT = (SELECT COUNT(*) FROM auditoria);
+DECLARE @antes2 INT = (SELECT ISNULL(MAX(cod_auditoria), 0) FROM auditoria);
 
 EXEC sys.sp_set_session_context @key = N'cod_usuario', @value = 9;
 
@@ -252,7 +252,7 @@ GO
 -- producto UPDATE, stock 40 -> 39). Tras el ROLLBACK: 10 filas y
 -- stock 40.
 -- =============================================================
-DECLARE @antes3 INT = (SELECT COUNT(*) FROM auditoria);
+DECLARE @antes3 INT = (SELECT ISNULL(MAX(cod_auditoria), 0) FROM auditoria);
 
 EXEC sys.sp_set_session_context @key = N'cod_usuario', @value = 4;
 
@@ -313,7 +313,7 @@ GO
 -- una vez: 10 filas de auditoria en una sola sentencia. Es la
 -- prueba de que es set-based y no fila por fila.
 -- =============================================================
-DECLARE @antes5 INT = (SELECT COUNT(*) FROM auditoria);
+DECLARE @antes5 INT = (SELECT ISNULL(MAX(cod_auditoria), 0) FROM auditoria);
 
 EXEC sys.sp_set_session_context @key = N'cod_usuario', @value = 9;
 
