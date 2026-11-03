@@ -63,6 +63,7 @@ END CATCH;
 - **RN.03:** el precio, la alícuota y el IVA se copian en el detalle y no cambian después.
 - **RN.09:** el stock baja al confirmarse la venta.
 - **RN.11:** no se vende si el stock es insuficiente.
+- **RN.30:** al cancelar un pedido confirmado, el stock se repone en la misma transacción (`sp_cancelar_pedido`).
 - **RN.10:** el total se calcula desde el detalle.
 - **RN.04 y RN.16:** el pedido usa la dirección principal del cliente, u otra de las suyas indicada en `@cod_direccion`, y la fecha actual. El procedimiento todavía no permite escribir una dirección solo para ese pedido, como prevé RN.04.
 
@@ -73,6 +74,7 @@ END CATCH;
 3. **T3:** un pedido, un detalle válido y un detalle inválido; el `CHECK` falla y no queda nada.
 4. **T4:** un punto de guardado; se revierte el detalle pero no el pedido.
 5. **T5:** el procedimiento dentro de una transacción del llamador; no confirma por su cuenta.
+6. **T6:** la cancelación de un pedido; el estado y el stock cambian juntos, y se rechaza la de un pedido facturado o despachado.
 
 **Errores que se controlan:**
 
@@ -80,6 +82,10 @@ END CATCH;
 |---|---|
 | 50005 | Stock insuficiente |
 | 547 | Violación de un `CHECK` (cantidad = 0) |
+| 50008 | Pedido inexistente |
+| 50009 | El pedido ya está cancelado |
+| 50010 | El pedido ya tiene factura |
+| 50011 | El pedido ya fue despachado o entregado |
 
 ## 5. Demostración y resultados
 
@@ -92,10 +98,13 @@ Las pruebas están en [scripts.sql](scripts.sql). La columna **Obtenido** indica
 | T3 | Atomicidad | Error 547; pedidos 12/12; detalles 18/18 | Sí | `03_atomicidad.png` |
 | T4 | Punto de guardado | Detalle 1→0 con el pedido vivo; tras el rollback total, 0 | Sí | `04_savepoint.png` |
 | T5 | Transacción del llamador | `tran_count` 1 y stock 39; tras el rollback, 40 y 0 | Sí | `05_transaccion_llamador.png` |
+| T6 | Cancelación de un pedido | Confirmado: stock 40→39→40; pendiente: stock sin cambios; errores 50008 a 50011 | Sí | Falta |
 
 Notas:
 
 - T1 crea un pedido y lo elimina al final, para no alterar los datos de las etapas anteriores.
 - T2, T3 y T4 terminan en `ROLLBACK`.
+- T6 se verificó ejecutando el script, y falta su captura. Sus pruebas que modifican datos se revierten.
+- La cancelación no reintegra el pago: el reintegro corresponde a la pasarela, que queda fuera del alcance. El pedido deja de contar como venta porque ya no está confirmado.
 - T5 demuestra que el procedimiento respeta la transacción del llamador (`@tran_propia`).
 - Al terminar, la base queda con 12 pedidos y 18 detalles.

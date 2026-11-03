@@ -16,7 +16,7 @@
 
 **RN.08:** Historial de costos de compra: el costo unitario del producto al momento de la compra queda registrado en el detalle de la compra.
 
-**RN.09:** El stock de un producto se almacena como un valor asociado a cada producto y se actualiza automáticamente al confirmarse cada compra (entradas o incrementos) o pedido (salidas por ventas o decrementos).
+**RN.09:** El stock de un producto se almacena como un valor asociado a cada producto y se actualiza automáticamente al confirmarse cada compra (entradas o incrementos) o pedido (salidas por ventas o decrementos). Al cancelar un pedido confirmado, el stock se repone (RN.30).
 
 **RN.10:** El monto total de un pedido no se almacena como un valor fijo, se calcula a partir del precio unitario de cada producto al momento de la venta y la correspondiente cantidad vendida.
 
@@ -57,3 +57,5 @@
 **RN.28:** Las alícuotas de IVA se registran en un catálogo único y cada producto tiene asignada una alícuota de ese catálogo. Por el rubro de la tienda, los productos solo utilizan la alícuota general (21 %) o la reducida (10,5 %). Al confirmarse una venta, el porcentaje vigente se copia en el detalle del pedido y no se modifica aunque el catálogo cambie después (complementa RN.19).
 
 **RN.29:** Las provincias y localidades se registran en catálogos únicos: cada localidad pertenece a una única provincia. Cada dirección pertenece a un único cliente o a un único proveedor, y registra calle, número, código postal y localidad. Un proveedor puede no tener direcciones cargadas, y tanto un cliente como un proveedor tienen como máximo una dirección principal. Puede haber localidades con el mismo nombre en provincias distintas. La dirección usada en un pedido se copia como texto en el propio pedido y no cambia si después se modifica el catálogo (complementa RN.04).
+
+**RN.30:** Un pedido puede cancelarse mientras no esté facturado ni despachado. Si estaba confirmado, sus unidades vuelven al stock en la misma operación; si estaba pendiente, el stock no cambia porque todavía no se había descontado. El reintegro del pago corresponde a la pasarela y queda fuera del sistema.

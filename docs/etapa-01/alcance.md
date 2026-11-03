@@ -6,7 +6,7 @@
 - **Gestión de productos**: catálogo de productos y categorías, con sus respectivos precio de lista, alícuota de IVA, stock, descripción, especificaciones técnicas (ficha técnica) y contenido multimedia (imágenes y videos).
 - **Gestión de promociones**: registro de promociones con vigencia, porcentaje de descuento y/o cuotas sin interés, aplicables a uno o varios productos, y sus slides (banners) para la página principal de la tienda.
 - **Gestión de compras a proveedores**: catálogo de proveedores, historial de compras y control de stock mediante actualización en catálogo de productos.
-- **Registro de pedidos**: con confirmación por parte del cliente, validación automática de stock disponible antes de confirmar la operación, y seguimiento logístico del envío (transportista, número de seguimiento, estado), método de pago y estado como datos propios del pedido; el monto no se guarda, se calcula desde el detalle (RN.10).
+- **Registro de pedidos**: con confirmación por parte del cliente, validación automática de stock disponible antes de confirmar la operación, y seguimiento logístico del envío (transportista, número de seguimiento, estado), método de pago y estado como datos propios del pedido; el monto no se guarda, se calcula desde el detalle (RN.10). Un pedido puede cancelarse mientras no esté facturado ni despachado (RN.30).
 - **Registro de métodos de pago.**
 - **Emisión de facturación total del pedido.**
 - **Gestión de usuarios internos**: administración del sistema mediante usuarios con roles diferenciados (depósito, administrador, soporte) y permisos distintos por rol; auditoría de las operaciones sensibles realizadas sobre precios, stock, pedidos, facturación y compras.
