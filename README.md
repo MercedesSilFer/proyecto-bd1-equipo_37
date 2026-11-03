@@ -22,7 +22,7 @@ La base de datos cubre clientes, catálogo de productos, promociones, compras a 
 | IV. Consultas | 15 casos de uso: comprobante, reporte agregado y consultas avanzadas | Completa | [docs/etapa-04](docs/etapa-04/) |
 | V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | En curso | [docs/etapa-05](docs/etapa-05/) |
 
-En la Etapa V hay documentación, scripts y capturas de tres temas, y esos temas todavía tienen tareas pendientes. De Seguridad solo está el permiso sobre el estado del pedido, e Índices no está empezado. `sql/tecnico/` tiene scripts adicionales de procedimientos, funciones y transacciones, todavía sin documentación ni capturas, y algunos de sus objetos repiten los de `docs/etapa-05/`.
+En la Etapa V, tres temas tienen documentación, scripts y capturas, y todavía tienen tareas pendientes. Índices está completo, salvo sus capturas de SSMS. De Seguridad solo está el permiso sobre el estado del pedido. `sql/tecnico/` tiene scripts adicionales de procedimientos, funciones y transacciones, todavía sin documentación ni capturas, y algunos de sus objetos repiten los de `docs/etapa-05/`.
 
 ## Cómo ejecutarlo
 
@@ -50,6 +50,8 @@ sqlcmd -S .\SQLEXPRESS -E -C -f 65001 -i sql\dml\cargar_datos.sql
 `-f 65001` hace que los acentos se lean bien. Los índices filtrados de `direccion` exigen `QUOTED_IDENTIFIER ON`: estos dos scripts ya lo activan, pero otro script que modifique esa tabla con `sqlcmd` necesita la opción `-I`. Los resultados de las pruebas de auditoría suponen una base recién cargada: si se ejecuta el paso 5 con los triggers ya creados, quedan filas de más en `auditoria`.
 
 **Scripts adicionales:** los de [sql/tecnico/](sql/tecnico/) se ejecutan en una base recién cargada, aparte de los pasos 3 a 6, en este orden: `funciones/` (01 y 02), `procedimientos/` (01 a 07 y `99_limpieza_lotes.sql`) y `transacciones/` (01 a 04 y `99_limpieza_demo.sql`).
+
+**Índices:** los scripts de [sql/tecnico/indices/](sql/tecnico/indices/) se ejecutan en orden (01 a 03) sobre la base ya cargada. Crean una tabla auxiliar de un millón de filas y la eliminan al final. `02_pruebas_indices.sql` vacía la memoria de datos de todo el servidor, así que conviene usarlo solo en un equipo de pruebas.
 
 ## Por qué 22 tablas
 
