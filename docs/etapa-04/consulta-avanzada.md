@@ -21,6 +21,8 @@ Se desarrollan 13 consultas que combinan tablas mediante "JOIN" y/o subconsultas
 | 12 | Último pedido de cada cliente | Subconsulta correlacionada con MAX|
 | 13 | Facturas sobre el promedio de su tipo | Subconsulta correlacionada con AVG |
 
+Las consultas 1, 3, 4, 6 y 8 muestran la ciudad o la provincia de la dirección principal del cliente o proveedor. Usan LEFT JOIN para no perder a quien no tenga una cargada, y el filtro `principal = 1` evita repetir a quien tenga varias direcciones.
+
 ---
 
 ## 1 — Clientes de alto valor
@@ -33,7 +35,7 @@ Identificar los clientes que compran por encima del promedio, para priorizar su 
 
 ### Estrategia SQL
 
-Une "cliente", "pedido" y "detalle_pedido" (3 tablas) y agrupa por cliente. El filtro condicional está en el HAVING: el total comprado por el cliente debe ser mayor que una **subconsulta escalar** que calcula el promedio de compra por cliente. Esa subconsulta usa una tabla derivada que primero suma el total de cada cliente y luego promedia esos totales. Se informan además la cantidad de pedidos, el ticket promedio y la fecha del último pedido.
+Une "cliente", "pedido" y "detalle_pedido" y agrupa por cliente; "direccion", "localidad" y "provincia" aportan la ubicación (6 tablas en total). El filtro condicional está en el HAVING: el total comprado por el cliente debe ser mayor que una **subconsulta escalar** que calcula el promedio de compra por cliente. Esa subconsulta usa una tabla derivada que primero suma el total de cada cliente y luego promedia esos totales. Se informan además la cantidad de pedidos, el ticket promedio y la fecha del último pedido.
 
 ### Resultado esperado
 
@@ -52,17 +54,20 @@ Agustina Ríos queda apenas por debajo del promedio (405.000,01).
 ```sql
 SELECT
     c.cod_cliente, c.nombre + ' ' + c.apellido AS cliente,
-    c.ciudad, c.provincia,  COUNT(DISTINCT p.cod_pedido) AS cant_pedidos,
+    loc.nombre AS ciudad, prov.nombre AS provincia,  COUNT(DISTINCT p.cod_pedido) AS cant_pedidos,
     SUM(dp.cantidad * dp.precio_unitario_venta)          AS total_comprado,
     SUM(dp.cantidad * dp.precio_unitario_venta)
         / COUNT(DISTINCT p.cod_pedido)                   AS ticket_promedio,
     MAX(p.fecha_pedido)                                  AS ultimo_pedido
 FROM cliente c
+LEFT JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 INNER JOIN pedido         p  ON p.cod_cliente = c.cod_cliente   --Solo clientes con pedido
 INNER JOIN detalle_pedido dp ON dp.cod_pedido = p.cod_pedido
 WHERE p.estado = 'confirmado'
   AND p.estado_pago = 'aprobado'
-GROUP BY c.cod_cliente, c.nombre, c.apellido, c.ciudad, c.provincia
+GROUP BY c.cod_cliente, c.nombre, c.apellido, loc.nombre, prov.nombre
 HAVING SUM(dp.cantidad * dp.precio_unitario_venta) >
        (SELECT AVG(t.total_cliente) --Monto promedio
         FROM (SELECT SUM(dp2.cantidad * dp2.precio_unitario_venta) AS total_cliente --Monto comprado por cada cliente
@@ -146,7 +151,7 @@ Identificar los proveedores con mayor volumen de compras (por encima del promedi
 
 ### Estrategia SQL
 
-Une "proveedor", "compra" y "detalle_compra" (3 tablas), filtra compras "recibida" y agrupa por proveedor, informando cantidad de compras, productos distintos, unidades y monto comprado. El HAVING compara el monto de cada proveedor contra una subconsulta escalar que calcula el promedio de monto comprado por proveedor.
+Une "proveedor", "compra" y "detalle_compra"; "direccion", "localidad" y "provincia" aportan la ubicación (6 tablas en total). Filtra compras "recibida" y agrupa por proveedor, informando cantidad de compras, productos distintos, unidades y monto comprado. El HAVING compara el monto de cada proveedor contra una subconsulta escalar que calcula el promedio de monto comprado por proveedor.
 
 ### Resultado esperado
 
@@ -162,16 +167,19 @@ El promedio por proveedor es **$ 3.852.000,00** (7 proveedores con compras recib
 ---
 ```sql
 SELECT
-    pv.cod_proveedor, pv.razon_social, pv.provincia,
+    pv.cod_proveedor, pv.razon_social, prov.nombre AS provincia,
     COUNT(DISTINCT co.cod_compra)   AS compras_recibidas,
     COUNT(DISTINCT dc.cod_producto) AS productos_distintos,
     SUM(dc.cantidad)                AS unidades,
     SUM(dc.cantidad * dc.costo_unitario)  AS monto_comprado
 FROM proveedor pv             --Proveedores con compra
+LEFT JOIN direccion dir ON dir.cod_proveedor = pv.cod_proveedor AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 INNER JOIN compra         co ON co.cod_proveedor = pv.cod_proveedor
 INNER JOIN detalle_compra dc ON dc.cod_compra    = co.cod_compra
 WHERE co.estado = 'recibida'
-GROUP BY pv.cod_proveedor, pv.razon_social, pv.provincia
+GROUP BY pv.cod_proveedor, pv.razon_social, prov.nombre
 HAVING SUM(dc.cantidad * dc.costo_unitario) >
        (SELECT AVG(t.monto)  --Promedio de monto comprado a cada proveedor
         FROM (SELECT SUM(dc2.cantidad * dc2.costo_unitario) AS monto  --Monto comprado por cada proveedor
@@ -203,10 +211,13 @@ Su único pedido (el 10) quedó en estado pendiente con pago pendiente.
 
 ---
 ```sql
-SELECT c.cod_cliente, c.nombre + ' ' + c.apellido AS cliente, c.ciudad, c.provincia, c.fecha_registro,
+SELECT c.cod_cliente, c.nombre + ' ' + c.apellido AS cliente, loc.nombre AS ciudad, prov.nombre AS provincia, c.fecha_registro,
     (SELECT COUNT(*) FROM pedido p2
      WHERE p2.cod_cliente = c.cod_cliente) AS pedidos_registrados
 FROM cliente c
+LEFT JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 WHERE NOT EXISTS (SELECT 1
                   FROM pedido p
                   WHERE p.cod_cliente = c.cod_cliente
@@ -287,8 +298,11 @@ Martín Romero compró productos de Audio en dos pedidos (el 2 y el 12) y aparec
 DECLARE @categoria VARCHAR(50) = 'Audio';
 
 SELECT
-    c.cod_cliente,    c.nombre + ' ' + c.apellido AS cliente, c.ciudad, c.provincia
+    c.cod_cliente,    c.nombre + ' ' + c.apellido AS cliente, loc.nombre AS ciudad, prov.nombre AS provincia
 FROM cliente c
+LEFT JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 WHERE c.cod_cliente IN
       (SELECT p.cod_cliente
        FROM pedido p
@@ -316,7 +330,7 @@ Listar los productos alcanzados por alguna promoción vigente en una fecha dada,
 
 ### Estrategia SQL
 
-EXISTS con una subconsulta que une 'promocion' y 'promocion_producto' y verifica que '@fecha' esté entre el inicio y el fin de alguna promoción del producto. Dos subconsultas escalares en el SELECT (MAX del descuento y MAX de las cuotas) resumen lo que ofrece cada producto cuando participa en más de una promoción. MAX ignora los valores nulos, por lo que una promoción solo en cuotas no anula el descuento de otra. Para consultar la fecha de hoy se reemplaza el valor de '@fecha' por 'GETDATE()'.
+EXISTS con una subconsulta que une 'promocion' y 'promocion_producto' y verifica que '@fecha' esté entre el inicio y el fin de alguna promoción del producto. Dos subconsultas escalares en el SELECT (MAX del descuento y MAX de las cuotas) resumen lo que ofrece cada producto cuando participa en más de una promoción. Una promoción solo en cuotas guarda descuento 0 y una solo con descuento guarda 1 cuota, por lo que MAX conserva el mejor valor de cada beneficio. Para consultar la fecha de hoy se reemplaza el valor de '@fecha' por 'GETDATE()'.
 
 ### Resultado esperado
 
@@ -324,12 +338,12 @@ Con @fecha = '2026-10-10' (vigentes: Línea Blanca en cuotas, Liquidación Acces
 
 | Producto | Precio de lista | Mayor descuento % | Máx. cuotas |
 |---|---|---|---|
-| Heladera 300L | 396.694,21 | — | 12 |
-| Funda Notebook | 6.611,57 | 35,00 | — |
-| Lavarropas automático 8kg | 520.661,16 | — | 12 |
+| Heladera 300L | 396.694,21 | 0,00 | 12 |
+| Funda Notebook | 6.611,57 | 35,00 | 1 |
+| Lavarropas automático 8kg | 520.661,16 | 0,00 | 12 |
 | Microondas 25L | 140.495,87 | 15,00 | 12 |
 
-El Microondas está en dos promociones vigentes (cuotas de Línea Blanca y 15 % del Día de la Madre).
+El Microondas está en dos promociones vigentes (cuotas de Línea Blanca y 15 % del Día de la Madre). Un descuento de 0 significa que no hay descuento, y 1 cuota, que no hay cuotas sin interés.
 
 ---
 ```sql
@@ -380,10 +394,13 @@ Distribuidora Litoral tiene una compra pendiente y Distribuidora Andina una canc
 ---
 ```sql
 SELECT
-    pv.cod_proveedor, pv.razon_social, pv.provincia,
+    pv.cod_proveedor, pv.razon_social, prov.nombre AS provincia,
     (SELECT COUNT(*) FROM compra co2
      WHERE co2.cod_proveedor = pv.cod_proveedor) AS compras_registradas
 FROM proveedor pv
+LEFT JOIN direccion dir ON dir.cod_proveedor = pv.cod_proveedor AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 WHERE NOT EXISTS (SELECT 1
                   FROM compra co
                   WHERE co.cod_proveedor = pv.cod_proveedor

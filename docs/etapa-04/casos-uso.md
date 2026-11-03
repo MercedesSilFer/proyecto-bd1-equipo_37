@@ -30,4 +30,4 @@ Se detalla el resumen de las necesidades de información que resuelve el sistema
 
 *Los permisos definitivos por rol se establecen en la Etapa V (Seguridad).*
 
-Los resultados esperados que figuran en cada documento corresponden a los datos de prueba cargados en el paso 2.
+Los resultados esperados que figuran en cada documento corresponden a los datos de prueba de `sql/dml/cargar_datos.sql`.
