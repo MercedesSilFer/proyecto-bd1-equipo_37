@@ -390,7 +390,10 @@ INSERT INTO especificacion_producto (cod_producto, cod_especificacion, valor) VA
 (10, 9, '12 meses');
 GO
 
-SELECT 'alicuota_iva' AS tabla, COUNT(*) AS registros FROM alicuota_iva
+SELECT 'provincia' AS tabla, COUNT(*) AS registros FROM provincia
+UNION ALL SELECT 'localidad', COUNT(*) FROM localidad
+UNION ALL SELECT 'direccion', COUNT(*) FROM direccion
+UNION ALL SELECT 'alicuota_iva', COUNT(*) FROM alicuota_iva
 UNION ALL SELECT 'categoria', COUNT(*) FROM categoria
 UNION ALL SELECT 'usuario', COUNT(*) FROM usuario
 UNION ALL SELECT 'cliente', COUNT(*) FROM cliente
