@@ -16,7 +16,7 @@ La base de datos cubre clientes, catálogo de productos, promociones, compras a 
 
 | Etapa | Contenido | Estado | Documentación |
 |---|---|---|---|
-| I. Requerimientos | Caso, alcance y 29 reglas de negocio | Completa | [docs/etapa-01](docs/etapa-01/) |
+| I. Requerimientos | Caso, alcance y 30 reglas de negocio | Completa | [docs/etapa-01](docs/etapa-01/) |
 | II. Modelado | DER, modelo relacional, normalización y decisiones de diseño | Completa | [docs/etapa-02](docs/etapa-02/) |
 | III. Implementación | 22 tablas, restricciones y datos de prueba | Completa | [docs/etapa-03](docs/etapa-03/) |
 | IV. Consultas | 15 casos de uso: comprobante, reporte agregado y consultas avanzadas | Completa | [docs/etapa-04](docs/etapa-04/) |
@@ -36,7 +36,7 @@ Ejecutar en este orden:
 | 2 | [sql/dml/cargar_datos.sql](sql/dml/cargar_datos.sql) | Carga los datos de prueba |
 | 3 | [sql/consultas/](sql/consultas/) | Consultas de la Etapa IV, en cualquier orden |
 | 4 | [procedimientos_funciones/scripts.sql](docs/etapa-05/procedimientos_funciones/scripts.sql) | Crea las funciones y el procedimiento de venta, y corre sus pruebas |
-| 5 | [transacciones/scripts.sql](docs/etapa-05/transacciones/scripts.sql) | Pruebas de transacciones (usa el paso 4) |
+| 5 | [transacciones/scripts.sql](docs/etapa-05/transacciones/scripts.sql) | Crea la cancelación de pedidos y corre las pruebas de transacciones (usa el paso 4) |
 | 6 | [triggers_auditoria/scripts.sql](docs/etapa-05/triggers_auditoria/scripts.sql) | Crea los triggers de auditoría y corre sus pruebas (usa el paso 4) |
 
 Ejemplo con `sqlcmd`, desde la raíz del repositorio:
@@ -49,6 +49,10 @@ sqlcmd -S .\SQLEXPRESS -E -C -f 65001 -i sql\dml\cargar_datos.sql
 `-f 65001` hace que los acentos se lean bien. Los índices filtrados de `direccion` exigen `QUOTED_IDENTIFIER ON`: estos dos scripts ya lo activan, pero otro script que modifique esa tabla con `sqlcmd` necesita la opción `-I`. Los resultados de las pruebas de auditoría suponen una base recién cargada: si se ejecuta el paso 5 con los triggers ya creados, quedan filas de más en `auditoria`.
 
 **Scripts adicionales:** los de [sql/tecnico/](sql/tecnico/) se ejecutan en una base recién cargada, aparte de los pasos 3 a 6, en este orden: `funciones/` (01 y 02), `procedimientos/` (01 a 07 y `99_limpieza_lotes.sql`) y `transacciones/` (01 a 04 y `99_limpieza_demo.sql`).
+
+## Por qué 22 tablas
+
+Cada tabla responde a una regla de negocio o a la normalización, dentro del alcance definido. La justificación completa está en la [decisión 16](docs/etapa-02/decisiones-diseno.md).
 
 ## Modelo de datos
 

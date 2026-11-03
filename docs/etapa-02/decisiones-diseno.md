@@ -74,3 +74,26 @@ Las alícuotas se registran en la tabla `alicuota_iva` y cada producto la refere
 En `producto` y `promocion`, `descripcion` es obligatoria, porque se muestra en la tienda. En `promocion`, un beneficio que no se ofrece se guarda como valor neutro en lugar de nulo: `porcentaje_descuento` = 0 y `nro_cuotas` = 1, y `CK_promocion_beneficio` exige al menos un descuento mayor a 0 o más de una cuota (RN.23). En `compra`, `nro_comprobante_prov` vale `'S/N'` hasta que el proveedor entrega el comprobante.
 
 `auditoria.valor_anterior` y `auditoria.valor_nuevo` siguen admitiendo nulos: un `INSERT` no tiene valor anterior y un `DELETE` no tiene valor nuevo, y no hay un valor neutro que represente esa ausencia sin confundirse con un dato auditado.
+
+## 16. Justificación de las 22 tablas
+
+El modelo tiene las tablas que una tienda online necesita para funcionar dentro del alcance definido: vender, comprar, controlar el stock, facturar y auditar. Ninguna se agregó por anticipado: cada una responde a una regla de negocio o a la normalización hasta 3FN.
+
+| Área | Tablas | Qué resuelven | Qué pasaría sin separarlas |
+|---|---|---|---|
+| Clientes y ubicación (4) | `cliente`, `direccion`, `localidad`, `provincia` | Un cliente o proveedor con varias direcciones, y una localidad que determina su provincia (RN.04, RN.29) | Cada cliente tendría una sola dirección, y la provincia se repetiría y podría cargarse mal |
+| Catálogo (6) | `producto`, `categoria`, `alicuota_iva`, `especificacion`, `especificacion_producto`, `multimedia` | La clasificación, el IVA, la ficha técnica y las imágenes de cada producto (RN.06, RN.26 a RN.28) | Un cambio de alícuota obligaría a corregir cada producto, y la cantidad de especificaciones o archivos quedaría limitada por las columnas de la tabla |
+| Promociones (3) | `promocion`, `promocion_producto`, `slide` | Una promoción con varios productos y banners, y un producto en varias promociones (RN.23 a RN.25) | Los datos de la promoción se repetirían por cada producto alcanzado |
+| Ventas (4) | `pedido`, `detalle_pedido`, `metodo_pago`, `factura` | Los productos de cada pedido, el precio y el IVA de ese momento, y un único comprobante (RN.03, RN.05, RN.17) | Un pedido repetiría sus datos en cada renglón, y un cambio de precio alteraría las ventas ya hechas |
+| Compras (3) | `compra`, `detalle_compra`, `proveedor` | El costo de cada compra y el vínculo entre proveedor y producto (RN.07, RN.08, RN.20) | Se perdería el historial de costos, y no se podría calcular el margen ni registrar un proveedor sin compras |
+| Administración (2) | `usuario`, `auditoria` | Quién hizo cada operación y qué cambió en los datos sensibles (RN.12 a RN.14) | No se podrían controlar los roles ni reconstruir un cambio de precio o de stock |
+
+La cantidad de tablas no agrega datos: los ordena para que cada uno se guarde en un solo lugar, salvo las copias históricas que se conservan a propósito (decisiones 7, 9 y 12). Las 48 pruebas de validación de la Etapa III confirman que las restricciones funcionan como se definieron.
+
+El modelo no cubre todo lo que puede necesitar un comercio. Carrito de compras, devoluciones, pasarela de pago, logística, venta en local y varios depósitos quedan fuera del alcance, y se podrían agregar sobre estas tablas sin reemplazarlas.
+
+## 17. Cancelación de pedidos
+
+`pedido.estado` registra la cancelación, pero el stock se descuenta al confirmar la venta, así que cambiar solo el estado dejaría unidades de menos. Por eso `sp_cancelar_pedido` cambia el estado y repone el stock en una misma transacción (RN.30).
+
+No se permite cancelar un pedido facturado, porque anular un comprobante fiscal requiere una nota de crédito, ni uno despachado, porque ya sería una devolución: las dos quedan fuera del alcance. `estado_pago` no se modifica, ya que el reintegro corresponde a la pasarela. Por ahora, nada impide cambiar `estado` con un `UPDATE` directo; quitar ese permiso corresponde al tema Seguridad.
