@@ -2,14 +2,29 @@
 
 ## 1. Restricciones por tabla
 
+### provincia
+- **PRIMARY KEY:** cod_provincia.
+- **UNIQUE:** nombre. El catálogo se carga con las 24 provincias/jurisdicciones oficiales de la República Argentina.
+
+### localidad
+- **PRIMARY KEY:** cod_localidad.
+- **UNIQUE:** combinación (nombre, cod_provincia), porque puede haber localidades con el mismo nombre en provincias distintas.
+- **FOREIGN KEY:** cod_provincia → provincia.cod_provincia.
+
+### direccion
+- **PRIMARY KEY:** cod_direccion.
+- **FOREIGN KEY:** cod_localidad → localidad.cod_localidad, cod_cliente → cliente.cod_cliente, cod_proveedor → proveedor.cod_proveedor.
+- **CHECK:** exactamente uno de cod_cliente y cod_proveedor tiene valor, porque cada dirección pertenece a un solo titular.
+- **UNIQUE filtrado:** una sola dirección con principal = 1 por cliente y por proveedor.
+- **DEFAULT:** principal = 0.
+
 ### cliente
 - **PRIMARY KEY:** cod_cliente (autogenerada con IDENTITY).
 - **UNIQUE:** email, no puede haber dos clientes con el mismo email.
 - **CHECK:**
   - activo IN (0,1),  solo admite baja lógica booleana.
   - email LIKE '%_@__%.__%', valida formato mínimo de email (usuario, arroba, dominio, punto, extensión de al menos 2 caracteres).
-  - provincia restringido a las 24 provincias/jurisdicciones oficiales de la República Argentina, almacenada en mayúsculas.
-- **DEFAULT:** activo = 1, fecha_registro = CAST(GETDATE() AS DATE)`.
+- **DEFAULT:** activo = 1, fecha_registro = CAST(GETDATE() AS DATE).
 
 ### usuario
 - **PRIMARY KEY:** cod_usuario.
@@ -42,10 +57,10 @@
 
 ### proveedor
 - **PRIMARY KEY:** cod_proveedor.
-- **UNIQUE:** cuit.
+- **UNIQUE:** cuit, email.
 - **CHECK:**
+  - email LIKE '%_@__%.__%', valida formato mínimo de email.
   - cuit valida formato "XX-XXXXXXXX-X" (patrón numérico con guiones).
-  - provincia restringido a las 24 provincias/jurisdicciones oficiales.
   - activo IN (0,1).
 - **DEFAULT:** activo = 1.
 
@@ -59,7 +74,7 @@
 - **CHECK:**
   - estado IN ('pendiente', 'confirmado', 'cancelado').
   - estado_pago IN ('pendiente', 'aprobado', 'rechazado').
-  - estado_envio IS NULL OR estado_envio IN ('pendiente', 'despachado', 'entregado')`.
+  - estado_envio IS NULL OR estado_envio IN ('pendiente', 'despachado', 'entregado').
   - fecha_pedido <= GETDATE(), no admite fecha futura.
   - estado_pago <> 'aprobado' OR ref_transaccion IS NOT NULL, garantiza que todo pago aprobado tenga su referencia de transacción registrada.
 - **DEFAULT:** fecha_pedido = GETDATE(), estado = 'pendiente', estado_pago = 'pendiente'.
@@ -70,7 +85,7 @@
 - **CHECK:**
   - estado IN ('pendiente', 'recibida', 'cancelada').
   - fecha <= GETDATE().
-- **DEFAULT:** estado = 'pendiente', fecha = GETDATE().
+- **DEFAULT:** nro_comprobante_prov = 'S/N', estado = 'pendiente', fecha = GETDATE().
 
 ### auditoria
 - **PRIMARY KEY:** cod_auditoria.
@@ -103,9 +118,10 @@
 - **PRIMARY KEY:** cod_promocion.
 - **CHECK:**
   - fecha_fin >= fecha_inicio.
-  - porcentaje_descuento > 0 AND porcentaje_descuento <= 75.
-  - nro_cuotas BETWEEN 2 AND 36.
-  - porcentaje_descuento IS NOT NULL OR nro_cuotas IS NOT NULL, toda promoción ofrece al menos un beneficio (RN.23).
+  - porcentaje_descuento >= 0 AND porcentaje_descuento <= 75.
+  - nro_cuotas BETWEEN 1 AND 36.
+  - porcentaje_descuento > 0 OR nro_cuotas > 1, toda promoción ofrece al menos un beneficio (RN.23).
+- **DEFAULT:** porcentaje_descuento = 0 (sin descuento), nro_cuotas = 1 (sin cuotas sin interés).
 
 ### promocion_producto
 - **PRIMARY KEY compuesta:** (cod_promocion, cod_producto).
@@ -157,10 +173,14 @@
 | 19 | multimedia.cod_producto → producto.cod_producto | **CASCADE** | CASCADE | Las imágenes y videos pertenecen a un único producto (RN.26). |
 | 20 | especificacion_producto.cod_producto → producto.cod_producto | **CASCADE** | CASCADE | El valor de una especificación depende del producto (RN.27). |
 | 21 | especificacion_producto.cod_especificacion → especificacion.cod_especificacion | NO ACTION | CASCADE | No se puede eliminar del catálogo una especificación que usan productos. |
+| 22 | localidad.cod_provincia → provincia.cod_provincia | NO ACTION | CASCADE | No se puede eliminar una provincia que tiene localidades cargadas. |
+| 23 | direccion.cod_localidad → localidad.cod_localidad | NO ACTION | CASCADE | No se puede eliminar una localidad usada en alguna dirección. |
+| 24 | direccion.cod_cliente → cliente.cod_cliente | **CASCADE** | CASCADE | Las direcciones de un cliente solo existen para ese cliente. |
+| 25 | direccion.cod_proveedor → proveedor.cod_proveedor | **CASCADE** | CASCADE | Las direcciones de un proveedor solo existen para ese proveedor. |
 
 ### Criterio general aplicado
 
-- **`NO ACTION` en DELETE:** se aplica en toda relación hacia una entidad "maestra" con valor histórico o fiscal (cliente, usuario, producto, proveedor, metodo_pago, pedido). Impide el borrado físico y obliga a resolver la baja mediante los campos activo/estado ya definidos en esas tablas.
-- **CASCADE en DELETE:** se aplica en las relaciones de composición (detalle_pedido con pedido, detalle_compra con compra) y en las tablas dependientes del catálogo y las promociones (promocion_producto, slide, multimedia, especificacion_producto), donde el registro hijo no tiene sentido de existencia independiente del padre.
+- **`NO ACTION` en DELETE:** se aplica en toda relación hacia una entidad "maestra" con valor histórico o fiscal (cliente, usuario, producto, proveedor, metodo_pago, pedido). Impide el borrado físico y obliga a resolver la baja mediante los campos activo/estado ya definidos en esas tablas. La excepción es direccion, que depende de su titular y se elimina en cascada con él.
+- **CASCADE en DELETE:** se aplica en las relaciones de composición (detalle_pedido con pedido, detalle_compra con compra) y en las tablas dependientes del catálogo y las promociones (promocion_producto, slide, multimedia, especificacion_producto) y en las direcciones de cada cliente o proveedor, donde el registro hijo no tiene sentido de existencia independiente del padre.
 - **CASCADE en UPDATE:** se aplica en la mayoría de las relaciones. Si bien las claves primarias son IDENTITY y no cambian en la operatoria normal, es la convención estándar recomendada.
 - **Excepciones técnicas:** la autorreferencia de categoria usa NO ACTION/NO ACTION, por ser la única opción que SQL Server permite en una relación de una tabla consigo misma; pedido.cod_usuario usa NO ACTION en UPDATE para evitar rutas múltiples de cascada hacia factura; producto.cod_alicuota y detalle_compra.cod_producto conservan el comportamiento por defecto (NO ACTION).
