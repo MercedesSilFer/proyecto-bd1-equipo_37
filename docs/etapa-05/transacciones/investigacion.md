@@ -106,6 +106,6 @@ Notas:
 - T2, T3 y T4 terminan en `ROLLBACK`.
 - La evidencia de T6 es la salida de `sqlcmd` sobre una base temporal recién cargada, no una captura de SSMS. Sus pruebas que modifican datos se revierten.
 - La cancelación no reintegra el pago: el reintegro corresponde a la pasarela, que queda fuera del alcance. El pedido deja de contar como venta porque ya no está confirmado.
-- El permiso que impide cambiar `estado` con un `UPDATE` directo está en [seguridad/scripts.sql](../seguridad/scripts.sql).
+- El permiso que impide cambiar `estado` con un `UPDATE` directo está en [01_permisos_estado_pedido.sql](../../../sql/tecnico/seguridad/01_permisos_estado_pedido.sql).
 - T5 demuestra que el procedimiento respeta la transacción del llamador (`@tran_propia`).
 - Al terminar, la base queda con 12 pedidos y 18 detalles.

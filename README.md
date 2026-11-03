@@ -38,7 +38,7 @@ Ejecutar en este orden:
 | 4 | [procedimientos_funciones/scripts.sql](docs/etapa-05/procedimientos_funciones/scripts.sql) | Crea las funciones y el procedimiento de venta, y corre sus pruebas |
 | 5 | [transacciones/scripts.sql](docs/etapa-05/transacciones/scripts.sql) | Crea la cancelación de pedidos y corre las pruebas de transacciones (usa el paso 4) |
 | 6 | [triggers_auditoria/scripts.sql](docs/etapa-05/triggers_auditoria/scripts.sql) | Crea los triggers de auditoría y corre sus pruebas (usa el paso 4) |
-| 7 | [seguridad/scripts.sql](docs/etapa-05/seguridad/scripts.sql) | Crea el rol de la aplicación, le impide cambiar `estado` sin los procedimientos y corre sus pruebas (usa los pasos 4 y 5) |
+| 7 | [seguridad/01_permisos_estado_pedido.sql](sql/tecnico/seguridad/01_permisos_estado_pedido.sql) | Crea el rol de la aplicación, le impide cambiar `estado` sin los procedimientos y corre sus pruebas (usa los pasos 4 y 5) |
 
 Ejemplo con `sqlcmd`, desde la raíz del repositorio:
 
