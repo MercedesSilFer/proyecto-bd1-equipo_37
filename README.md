@@ -1,2 +1,84 @@
 # proyecto-bd1-equipo_37
+
 El objetivo central del proyecto es diseñar, normalizar e implementar una base de datos relacional que soporte el ciclo completo de operaciones de venta, garantizando la integridad referencial, la consistencia y la no redundancia de la información.
+
+**Materia:** Bases de Datos I, UNNE (2026) · **Equipo:** 37
+
+**Integrantes:** Enzo Mauricio Antonio Benitez, Lisandro Lopez, Mercedes Fernandez
+
+## El caso: SmartHome Store
+
+SmartHome Store es una empresa minorista de electrodomésticos y productos electrónicos que vende por teléfono y redes sociales, y controla pedidos y stock en planillas de cálculo. Con el crecimiento de las ventas aparecieron errores, como vender productos sin stock, así que decidió migrar a una tienda online.
+
+La base de datos cubre clientes, catálogo de productos, promociones, compras a proveedores, pedidos, pagos, facturación, usuarios internos y auditoría de operaciones sensibles. No cubre la pasarela de pago por dentro, la logística del transporte, la venta en local ni las devoluciones. El detalle está en [alcance.md](docs/etapa-01/alcance.md).
+
+## Estado del proyecto
+
+| Etapa | Contenido | Estado | Documentación |
+|---|---|---|---|
+| I. Requerimientos | Caso, alcance y 29 reglas de negocio | Completa | [docs/etapa-01](docs/etapa-01/) |
+| II. Modelado | DER, modelo relacional, normalización y decisiones de diseño | Completa | [docs/etapa-02](docs/etapa-02/) |
+| III. Implementación | 22 tablas, restricciones y datos de prueba | Completa | [docs/etapa-03](docs/etapa-03/) |
+| IV. Consultas | 15 casos de uso: comprobante, reporte agregado y consultas avanzadas | Completa | [docs/etapa-04](docs/etapa-04/) |
+| V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | En curso | [docs/etapa-05](docs/etapa-05/) |
+
+En la Etapa V hay documentación, scripts y capturas de tres temas, y esos temas todavía tienen tareas pendientes. Seguridad e índices no están empezados. `sql/tecnico/` tiene scripts adicionales de procedimientos, funciones y transacciones, todavía sin documentación ni capturas, y algunos de sus objetos repiten los de `docs/etapa-05/`.
+
+## Cómo ejecutarlo
+
+**Requisitos:** SQL Server Express y SSMS o `sqlcmd`. Los scripts crean la base `smarthome_store`; si ya existe, hay que borrarla antes.
+
+Ejecutar en este orden:
+
+| # | Script | Qué hace |
+|---|---|---|
+| 1 | [sql/ddl/crear_bd.sql](sql/ddl/crear_bd.sql) | Crea la base y las tablas |
+| 2 | [sql/dml/cargar_datos.sql](sql/dml/cargar_datos.sql) | Carga los datos de prueba |
+| 3 | [sql/consultas/](sql/consultas/) | Consultas de la Etapa IV, en cualquier orden |
+| 4 | [procedimientos_funciones/scripts.sql](docs/etapa-05/procedimientos_funciones/scripts.sql) | Crea las funciones y el procedimiento de venta, y corre sus pruebas |
+| 5 | [transacciones/scripts.sql](docs/etapa-05/transacciones/scripts.sql) | Pruebas de transacciones (usa el paso 4) |
+| 6 | [triggers_auditoria/scripts.sql](docs/etapa-05/triggers_auditoria/scripts.sql) | Crea los triggers de auditoría y corre sus pruebas (usa el paso 4) |
+
+Ejemplo con `sqlcmd`, desde la raíz del repositorio:
+
+```
+sqlcmd -S .\SQLEXPRESS -E -C -f 65001 -i sql\ddl\crear_bd.sql
+sqlcmd -S .\SQLEXPRESS -E -C -f 65001 -i sql\dml\cargar_datos.sql
+```
+
+`-f 65001` hace que los acentos se lean bien. Los índices filtrados de `direccion` exigen `QUOTED_IDENTIFIER ON`: estos dos scripts ya lo activan, pero otro script que modifique esa tabla con `sqlcmd` necesita la opción `-I`. Los resultados de las pruebas de auditoría suponen una base recién cargada: si se ejecuta el paso 5 con los triggers ya creados, quedan filas de más en `auditoria`.
+
+**Scripts adicionales:** los de [sql/tecnico/](sql/tecnico/) se ejecutan en una base recién cargada, aparte de los pasos 3 a 6, en este orden: `funciones/` (01 y 02), `procedimientos/` (01 a 07 y `99_limpieza_lotes.sql`) y `transacciones/` (01 a 04 y `99_limpieza_demo.sql`).
+
+## Modelo de datos
+
+![Diagrama Entidad-Relación](docs/etapa-02/DER/DER.png)
+
+El detalle de las tablas y el diagrama relacional están en [modelo-relacional.md](docs/etapa-02/modelo-relacional.md).
+
+| Área | Tablas |
+|---|---|
+| Clientes y ubicación | `cliente`, `direccion`, `localidad`, `provincia` |
+| Catálogo | `producto`, `categoria`, `alicuota_iva`, `especificacion`, `especificacion_producto`, `multimedia` |
+| Promociones | `promocion`, `promocion_producto`, `slide` |
+| Ventas | `pedido`, `detalle_pedido`, `metodo_pago`, `factura` |
+| Compras | `compra`, `detalle_compra`, `proveedor` (sus direcciones también están en `direccion`) |
+| Administración | `usuario`, `auditoria` |
+
+## Estructura del repositorio
+
+```
+docs/
+  etapa-01/   Caso, alcance y reglas de negocio
+  etapa-02/   DER, modelo relacional, normalización y decisiones
+  etapa-03/   Implementación, restricciones y pruebas de validación
+  etapa-04/   Casos de uso y explicación de cada consulta
+  etapa-05/   Por tema: investigacion.md, scripts.sql y evidencias/
+sql/
+  ddl/        Creación de la base
+  dml/        Datos de prueba
+  consultas/  Consultas de la Etapa IV
+  tecnico/    Scripts adicionales de la Etapa V
+```
+
+`modelos/der/` está vacía: el DER está en `docs/etapa-02/DER/`.
