@@ -116,10 +116,13 @@ BEGIN TRY
         INSERT INTO pedido
             (estado, estado_pago, calle, numero, ciudad, provincia, cod_postal,
              cod_cliente, cod_metodo_pago)
-        SELECT 'pendiente', 'pendiente', calle, numero, ciudad, provincia, cod_postal,
-               cod_cliente, 1
-        FROM cliente
-        WHERE cod_cliente = 1;
+        SELECT 'pendiente', 'pendiente', dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal,
+               c.cod_cliente, 1
+        FROM cliente c
+        INNER JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        INNER JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+        INNER JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = 1;
 
         DECLARE @cod3 INT = SCOPE_IDENTITY();
 
@@ -158,10 +161,13 @@ BEGIN TRY
         INSERT INTO pedido
             (estado, estado_pago, calle, numero, ciudad, provincia, cod_postal,
              cod_cliente, cod_metodo_pago)
-        SELECT 'pendiente', 'pendiente', calle, numero, ciudad, provincia, cod_postal,
-               cod_cliente, 1
-        FROM cliente
-        WHERE cod_cliente = 1;
+        SELECT 'pendiente', 'pendiente', dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal,
+               c.cod_cliente, 1
+        FROM cliente c
+        INNER JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        INNER JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+        INNER JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = 1;
 
         DECLARE @cod4 INT = SCOPE_IDENTITY();
 

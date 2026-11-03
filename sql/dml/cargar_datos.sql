@@ -8,19 +8,66 @@
 -- =============================================================
 USE smarthome_store;
 GO
+SET QUOTED_IDENTIFIER ON; -- lo exigen los indices filtrados de direccion
+GO
+
+SET IDENTITY_INSERT provincia ON;
+INSERT INTO provincia (cod_provincia, nombre) VALUES
+(1, 'BUENOS AIRES'),
+(2, 'CATAMARCA'),
+(3, 'CHACO'),
+(4, 'CHUBUT'),
+(5, 'CIUDAD AUTÓNOMA DE BUENOS AIRES'),
+(6, 'CÓRDOBA'),
+(7, 'CORRIENTES'),
+(8, 'ENTRE RÍOS'),
+(9, 'FORMOSA'),
+(10, 'JUJUY'),
+(11, 'LA PAMPA'),
+(12, 'LA RIOJA'),
+(13, 'MENDOZA'),
+(14, 'MISIONES'),
+(15, 'NEUQUÉN'),
+(16, 'RÍO NEGRO'),
+(17, 'SALTA'),
+(18, 'SAN JUAN'),
+(19, 'SAN LUIS'),
+(20, 'SANTA CRUZ'),
+(21, 'SANTA FE'),
+(22, 'SANTIAGO DEL ESTERO'),
+(23, 'TIERRA DEL FUEGO'),
+(24, 'TUCUMÁN');
+SET IDENTITY_INSERT provincia OFF;
+GO
+
+SET IDENTITY_INSERT localidad ON;
+INSERT INTO localidad (cod_localidad, nombre, cod_provincia) VALUES
+(1, 'Corrientes', 7),
+(2, 'Resistencia', 3),
+(3, 'Posadas', 14),
+(4, 'Buenos Aires', 5),
+(5, 'Santa Fe', 21),
+(6, 'Córdoba', 6),
+(7, 'Formosa', 9),
+(8, 'Salta', 17),
+(9, 'Mendoza', 13),
+(10, 'Rosario', 21),
+(11, 'Buenos Aires', 1);
+SET IDENTITY_INSERT localidad OFF;
+GO
 
 SET IDENTITY_INSERT cliente ON;
-INSERT INTO cliente (cod_cliente, nombre, apellido, email, contrasena_hash, calle, numero, ciudad, provincia, cod_postal, fecha_registro, telefono) VALUES
-(1, 'Lucía', 'Gómez', 'lucia.gomez@gmail.com', '$2b$12$luciagomezluciagomezluhashDePrueba0000000000000', 'Junín', '1234', 'Corrientes', 'CORRIENTES', '3400', '2026-03-10', '3794123456'),
-(2, 'Martín', 'Romero', 'martin.romero@hotmail.com', '$2b$12$martinromeromartinromehashDePrueba0000000000000', 'Av. 3 de Abril', '850', 'Corrientes', 'CORRIENTES', '3400', '2026-04-02', '3794556677'),
-(3, 'Sofía', 'Acosta', 'sofia.acosta@yahoo.com.ar', '$2b$12$sofiaacostasofiaacostahashDePrueba0000000000000', 'Av. Sarmiento', '560', 'Resistencia', 'CHACO', '3500', '2026-04-18', '3624332211'),
-(4, 'Tomás', 'Benítez', 'tomas.benitez@gmail.com', '$2b$12$tomasbeniteztomasbenithashDePrueba0000000000000', 'Av. Mitre', '2100', 'Posadas', 'MISIONES', '3300', '2026-05-05', '3764445566'),
-(5, 'Valentina', 'Díaz', 'valen.diaz@outlook.com', '$2b$12$valendiazvalendiazvalehashDePrueba0000000000000', 'Av. Corrientes', '3456', 'Buenos Aires', 'CIUDAD AUTÓNOMA DE BUENOS AIRES', '1193', '2026-05-20', '1145678901'),
-(6, 'Joaquín', 'Fernández', 'joaquin.fernandez@gmail.com', '$2b$12$joaquinfernandezjoaquihashDePrueba0000000000000', 'Bv. Pellegrini', '1500', 'Santa Fe', 'SANTA FE', '3000', '2026-06-01', '3424123123'),
-(7, 'Camila', 'Ortiz', 'camila.ortiz@gmail.com', '$2b$12$camilaortizcamilaortizhashDePrueba0000000000000', 'Av. Colón', '980', 'Córdoba', 'CÓRDOBA', '5000', '2026-06-14', '3514789456'),
-(8, 'Nicolás', 'Vera', 'nicolas.vera@hotmail.com', '$2b$12$nicolasveranicolasverahashDePrueba0000000000000', '9 de Julio', '745', 'Formosa', 'FORMOSA', '3600', '2026-07-03', '3704112233'),
-(9, 'Agustina', 'Ríos', 'agustina.rios@gmail.com', '$2b$12$agustinariosagustinarihashDePrueba0000000000000', 'Av. Belgrano', '1320', 'Salta', 'SALTA', '4400', '2026-07-22', '3874998877'),
-(10, 'Federico', 'Molina', 'fede.molina@gmail.com', '$2b$12$fedemolinafedemolinafehashDePrueba0000000000000', 'San Martín', '415', 'Mendoza', 'MENDOZA', '5500', '2026-08-09', '2614556677');
+INSERT INTO cliente (cod_cliente, nombre, apellido, email, contrasena_hash, fecha_registro, telefono) VALUES
+(1, 'Lucía', 'Gómez', 'lucia.gomez@gmail.com', '$2b$12$luciagomezluciagomezluhashDePrueba0000000000000', '2026-03-10', '3794123456'),
+(2, 'Martín', 'Romero', 'martin.romero@hotmail.com', '$2b$12$martinromeromartinromehashDePrueba0000000000000', '2026-04-02', '3794556677'),
+(3, 'Sofía', 'Acosta', 'sofia.acosta@yahoo.com.ar', '$2b$12$sofiaacostasofiaacostahashDePrueba0000000000000', '2026-04-18', '3624332211'),
+(4, 'Tomás', 'Benítez', 'tomas.benitez@gmail.com', '$2b$12$tomasbeniteztomasbenithashDePrueba0000000000000', '2026-05-05', '3764445566'),
+(5, 'Valentina', 'Díaz', 'valen.diaz@outlook.com', '$2b$12$valendiazvalendiazvalehashDePrueba0000000000000', '2026-05-20', '1145678901'),
+(6, 'Joaquín', 'Fernández', 'joaquin.fernandez@gmail.com', '$2b$12$joaquinfernandezjoaquihashDePrueba0000000000000', '2026-06-01', '3424123123'),
+(7, 'Camila', 'Ortiz', 'camila.ortiz@gmail.com', '$2b$12$camilaortizcamilaortizhashDePrueba0000000000000', '2026-06-14', '3514789456'),
+(8, 'Nicolás', 'Vera', 'nicolas.vera@hotmail.com', '$2b$12$nicolasveranicolasverahashDePrueba0000000000000', '2026-07-03', '3704112233'),
+(9, 'Agustina', 'Ríos', 'agustina.rios@gmail.com', '$2b$12$agustinariosagustinarihashDePrueba0000000000000', '2026-07-22', '3874998877'),
+(10, 'Federico', 'Molina', 'fede.molina@gmail.com', '$2b$12$fedemolinafedemolinafehashDePrueba0000000000000', '2026-08-09', '2614556677');
 SET IDENTITY_INSERT cliente OFF;
 GO
 
@@ -84,18 +131,45 @@ SET IDENTITY_INSERT producto OFF;
 GO
 
 SET IDENTITY_INSERT proveedor ON;
-INSERT INTO proveedor (cod_proveedor, razon_social, cuit, calle, numero, ciudad, provincia) VALUES
-(1, 'Distribuidora Litoral S.A.', '30-71234567-8', 'Av. Maipú', '2200', 'Corrientes', 'CORRIENTES'),
-(2, 'Tecnología del Norte S.R.L.', '30-70987654-3', 'Av. Alberdi', '1450', 'Resistencia', 'CHACO'),
-(3, 'ElectroMayorista S.A.', '30-68765432-1', 'Av. Rivadavia', '8900', 'Buenos Aires', 'CIUDAD AUTÓNOMA DE BUENOS AIRES'),
-(4, 'Frío Hogar S.A.', '30-71111222-5', 'Ruta 9 Km 695', 'S/N', 'Córdoba', 'CÓRDOBA'),
-(5, 'Audio Pro Importaciones S.R.L.', '30-71555666-9', 'Av. San Martín', '3100', 'Rosario', 'SANTA FE'),
-(6, 'Informática Central S.A.', '30-70444555-2', 'Av. Callao', '1020', 'Buenos Aires', 'CIUDAD AUTÓNOMA DE BUENOS AIRES'),
-(7, 'Mobile World S.A.', '30-71888999-4', 'Av. Colón', '5200', 'Córdoba', 'CÓRDOBA'),
-(8, 'Accesorios Tech S.R.L.', '30-71222333-6', 'Av. Uruguay', '1780', 'Posadas', 'MISIONES'),
-(9, 'Línea Blanca Argentina S.A.', '30-69333444-7', 'Av. Belgrano', '4300', 'Buenos Aires', 'BUENOS AIRES'),
-(10, 'Distribuidora Andina S.R.L.', '30-71777888-0', 'Av. Las Heras', '650', 'Mendoza', 'MENDOZA');
+INSERT INTO proveedor (cod_proveedor, razon_social, nombre, email, cuit) VALUES
+(1, 'Distribuidora Litoral S.A.', 'Distribuidora Litoral', 'ventas@distribuidoralitoral.example', '30-71234567-8'),
+(2, 'Tecnología del Norte S.R.L.', 'Tecnología del Norte', 'ventas@tecnologiadelnorte.example', '30-70987654-3'),
+(3, 'ElectroMayorista S.A.', 'ElectroMayorista', 'ventas@electromayorista.example', '30-68765432-1'),
+(4, 'Frío Hogar S.A.', 'Frío Hogar', 'ventas@friohogar.example', '30-71111222-5'),
+(5, 'Audio Pro Importaciones S.R.L.', 'Audio Pro Importaciones', 'ventas@audioproimportaciones.example', '30-71555666-9'),
+(6, 'Informática Central S.A.', 'Informática Central', 'ventas@informaticacentral.example', '30-70444555-2'),
+(7, 'Mobile World S.A.', 'Mobile World', 'ventas@mobileworld.example', '30-71888999-4'),
+(8, 'Accesorios Tech S.R.L.', 'Accesorios Tech', 'ventas@accesoriostech.example', '30-71222333-6'),
+(9, 'Línea Blanca Argentina S.A.', 'Línea Blanca Argentina', 'ventas@lineablancaargentina.example', '30-69333444-7'),
+(10, 'Distribuidora Andina S.R.L.', 'Distribuidora Andina', 'ventas@distribuidoraandina.example', '30-71777888-0');
 SET IDENTITY_INSERT proveedor OFF;
+GO
+
+SET IDENTITY_INSERT direccion ON;
+INSERT INTO direccion (cod_direccion, calle, numero, cod_postal, principal, cod_localidad, cod_cliente, cod_proveedor) VALUES
+(1, 'Junín', '1234', '3400', 1, 1, 1, NULL),
+(2, 'Av. 3 de Abril', '850', '3400', 1, 1, 2, NULL),
+(3, 'Av. Sarmiento', '560', '3500', 1, 2, 3, NULL),
+(4, 'Av. Mitre', '2100', '3300', 1, 3, 4, NULL),
+(5, 'Av. Corrientes', '3456', '1193', 1, 4, 5, NULL),
+(6, 'Bv. Pellegrini', '1500', '3000', 1, 5, 6, NULL),
+(7, 'Av. Colón', '980', '5000', 1, 6, 7, NULL),
+(8, '9 de Julio', '745', '3600', 1, 7, 8, NULL),
+(9, 'Av. Belgrano', '1320', '4400', 1, 8, 9, NULL),
+(10, 'San Martín', '415', '5500', 1, 9, 10, NULL),
+(11, 'Av. Maipú', '2200', '3400', 1, 1, NULL, 1),
+(12, 'Av. Alberdi', '1450', '3500', 1, 2, NULL, 2),
+(13, 'Av. Rivadavia', '8900', '1193', 1, 4, NULL, 3),
+(14, 'Ruta 9 Km 695', 'S/N', '5000', 1, 6, NULL, 4),
+(15, 'Av. San Martín', '3100', '2000', 1, 10, NULL, 5),
+(16, 'Av. Callao', '1020', '1193', 1, 4, NULL, 6),
+(17, 'Av. Colón', '5200', '5000', 1, 6, NULL, 7),
+(18, 'Av. Uruguay', '1780', '3300', 1, 3, NULL, 8),
+(19, 'Av. Belgrano', '4300', '1900', 1, 11, NULL, 9),
+(20, 'Av. Las Heras', '650', '5500', 1, 9, NULL, 10),
+(21, 'Av. Costanera', '500', '3400', 0, 1, 1, NULL),
+(22, 'Av. Warnes', '2300', '1427', 0, 4, NULL, 3);
+SET IDENTITY_INSERT direccion OFF;
 GO
 
 SET IDENTITY_INSERT metodo_pago ON;
@@ -140,7 +214,7 @@ INSERT INTO compra (cod_compra, fecha, estado, nro_comprobante_prov, cod_proveed
 (6, '2026-06-03T10:00:00', 'recibida', '0004-00005567', 4, 4),
 (7, '2026-07-10T09:30:00', 'recibida', '0001-00012987', 7, 5),
 (8, '2026-08-12T15:20:00', 'recibida', '0002-00091234', 5, 3),
-(9, '2026-09-22T10:10:00', 'pendiente', NULL, 1, 8),
+(9, '2026-09-22T10:10:00', 'pendiente', 'S/N', 1, 8),
 (10, '2026-09-25T16:45:00', 'cancelada', '0010-00000451', 10, 4);
 SET IDENTITY_INSERT compra OFF;
 GO
@@ -218,14 +292,14 @@ GO
 
 SET IDENTITY_INSERT promocion ON;
 INSERT INTO promocion (cod_promocion, nombre, descripcion, fecha_inicio, fecha_fin, porcentaje_descuento, nro_cuotas) VALUES
-(1, 'Hot Sale 2026', 'Descuentos exclusivos en tecnología durante el Hot Sale.', '2026-05-11T00:00:00', '2026-05-13T23:59:59', 30.00, NULL),
-(2, 'Día del Padre', 'Regalos tecnológicos para papá con descuento.', '2026-06-08T00:00:00', '2026-06-21T23:59:59', 15.00, NULL),
-(3, 'Línea Blanca en cuotas', 'Electrodomésticos en 12 cuotas sin interés.', '2026-09-01T00:00:00', '2026-12-31T23:59:59', NULL, 12),
-(4, 'Liquidación Accesorios', 'Accesorios con gran descuento hasta agotar stock.', '2026-09-15T00:00:00', '2026-10-15T23:59:59', 35.00, NULL),
+(1, 'Hot Sale 2026', 'Descuentos exclusivos en tecnología durante el Hot Sale.', '2026-05-11T00:00:00', '2026-05-13T23:59:59', 30.00, 1),
+(2, 'Día del Padre', 'Regalos tecnológicos para papá con descuento.', '2026-06-08T00:00:00', '2026-06-21T23:59:59', 15.00, 1),
+(3, 'Línea Blanca en cuotas', 'Electrodomésticos en 12 cuotas sin interés.', '2026-09-01T00:00:00', '2026-12-31T23:59:59', 0.00, 12),
+(4, 'Liquidación Accesorios', 'Accesorios con gran descuento hasta agotar stock.', '2026-09-15T00:00:00', '2026-10-15T23:59:59', 35.00, 1),
 (5, 'Día de la Madre', 'Descuento y cuotas sin interés para el Día de la Madre.', '2026-10-05T00:00:00', '2026-10-18T23:59:59', 15.00, 6),
 (6, 'Semana del Audio', 'Auriculares y parlantes con descuento y cuotas.', '2026-10-20T00:00:00', '2026-10-27T23:59:59', 18.00, 6),
-(7, 'Semana Cyber', 'Ofertas online en informática y celulares.', '2026-11-02T00:00:00', '2026-11-04T23:59:59', 20.00, NULL),
-(8, 'Black Friday', 'Los mejores descuentos del año en toda la tienda.', '2026-11-27T00:00:00', '2026-11-30T23:59:59', 25.00, NULL),
+(7, 'Semana Cyber', 'Ofertas online en informática y celulares.', '2026-11-02T00:00:00', '2026-11-04T23:59:59', 20.00, 1),
+(8, 'Black Friday', 'Los mejores descuentos del año en toda la tienda.', '2026-11-27T00:00:00', '2026-11-30T23:59:59', 25.00, 1),
 (9, 'Navidad Tecno', 'Regalos de Navidad con descuento y 12 cuotas sin interés.', '2026-12-01T00:00:00', '2026-12-24T23:59:59', 10.00, 12),
 (10, 'Vuelta a Clases 2027', 'Notebooks, impresoras y accesorios para el inicio de clases.', '2027-02-15T00:00:00', '2027-03-10T23:59:59', 10.00, 3);
 SET IDENTITY_INSERT promocion OFF;

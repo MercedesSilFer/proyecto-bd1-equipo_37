@@ -2,6 +2,24 @@ CREATE DATABASE smarthome_store;
 GO
 USE smarthome_store;
 GO
+SET QUOTED_IDENTIFIER ON; -- lo exigen los indices filtrados de direccion
+GO
+CREATE TABLE provincia
+(
+  cod_provincia INT IDENTITY CONSTRAINT PK_provincia PRIMARY KEY,
+  nombre VARCHAR(50) NOT NULL,
+  CONSTRAINT UQ_provincia_nombre UNIQUE (nombre)
+);
+GO
+CREATE TABLE localidad
+(
+  cod_localidad INT IDENTITY CONSTRAINT PK_localidad PRIMARY KEY,
+  nombre VARCHAR(50) NOT NULL,
+  cod_provincia INT NOT NULL,
+  CONSTRAINT UQ_localidad_nombre_provincia UNIQUE (nombre, cod_provincia),
+  CONSTRAINT FK_localidad_provincia FOREIGN KEY (cod_provincia) REFERENCES provincia(cod_provincia) ON DELETE NO ACTION ON UPDATE CASCADE
+);
+GO
 CREATE TABLE cliente
 (
   cod_cliente INT IDENTITY CONSTRAINT PK_cliente PRIMARY KEY,
@@ -9,23 +27,12 @@ CREATE TABLE cliente
   apellido VARCHAR(50) NOT NULL,
   email VARCHAR(100) NOT NULL,
   contrasena_hash VARCHAR(255) NOT NULL,
-  calle VARCHAR(50) NOT NULL,
-  numero VARCHAR(10) NOT NULL,
-  ciudad VARCHAR(50) NOT NULL,
-  provincia VARCHAR(50) NOT NULL,
-  cod_postal VARCHAR(10) NOT NULL,
   fecha_registro DATE NOT NULL CONSTRAINT DF_cliente_fecha_registro DEFAULT CAST(GETDATE() AS DATE),
   activo BIT NOT NULL CONSTRAINT DF_cliente_activo DEFAULT 1,
   telefono VARCHAR (20) NOT NULL,
   CONSTRAINT UQ_cliente_email UNIQUE (email),
   CONSTRAINT CK_cliente_estado CHECK(activo IN (0,1)),
-  CONSTRAINT CK_cliente_email CHECK (email LIKE '%_@__%.__%'),
-  CONSTRAINT CK_cliente_provincia CHECK (UPPER(provincia) IN ('BUENOS AIRES', 'CATAMARCA', 'CHACO', 'CHUBUT', 
-                                                              'CIUDAD AUTÓNOMA DE BUENOS AIRES','CÓRDOBA', 'CORRIENTES', 
-                                                              'ENTRE RÍOS', 'FORMOSA', 'JUJUY', 'LA PAMPA', 'LA RIOJA', 'MENDOZA', 
-                                                              'MISIONES', 'NEUQUÉN', 'RÍO NEGRO', 'SALTA', 'SAN JUAN', 'SAN LUIS', 
-                                                              'SANTA CRUZ', 'SANTA FE', 'SANTIAGO DEL ESTERO', 'TIERRA DEL FUEGO', 'TUCUMÁN') 
-                                          AND provincia = UPPER(provincia))
+  CONSTRAINT CK_cliente_email CHECK (email LIKE '%_@__%.__%')
 );
 GO
 CREATE TABLE usuario
@@ -65,7 +72,7 @@ CREATE TABLE producto
 (
   cod_producto INT IDENTITY CONSTRAINT PK_producto PRIMARY KEY,
   nombre VARCHAR(50) NOT NULL,
-  descripcion VARCHAR(1000) NULL,
+  descripcion VARCHAR(1000) NOT NULL,
   precio_lista DECIMAL(10,2) NOT NULL,
   cod_alicuota INT NOT NULL,
   stock INT NOT NULL,
@@ -82,22 +89,36 @@ CREATE TABLE proveedor
 (
   cod_proveedor INT IDENTITY CONSTRAINT PK_proveedor PRIMARY KEY,
   razon_social VARCHAR(50) NOT NULL,
+  nombre VARCHAR(50) NOT NULL,
+  email VARCHAR(100) NOT NULL,
   cuit VARCHAR(13) NOT NULL,
-  calle VARCHAR(50) NOT NULL,
-  numero VARCHAR(10) NOT NULL,
-  ciudad VARCHAR(50) NOT NULL,
-  provincia VARCHAR(50) NOT NULL,
   activo BIT NOT NULL CONSTRAINT DF_proveedor_activo DEFAULT 1,
   CONSTRAINT UQ_proveedor_cuit UNIQUE (cuit),
+  CONSTRAINT UQ_proveedor_email UNIQUE (email),
+  CONSTRAINT CK_proveedor_email CHECK (email LIKE '%_@__%.__%'),
   CONSTRAINT CK_proveedor_cuit CHECK (cuit LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9]'),
-  CONSTRAINT CK_proveedor_provincia CHECK (UPPER(provincia) IN ('BUENOS AIRES', 'CATAMARCA', 'CHACO', 'CHUBUT', 
-                                                              'CIUDAD AUTÓNOMA DE BUENOS AIRES','CÓRDOBA', 'CORRIENTES', 
-                                                              'ENTRE RÍOS', 'FORMOSA', 'JUJUY', 'LA PAMPA', 'LA RIOJA', 'MENDOZA', 
-                                                              'MISIONES', 'NEUQUÉN', 'RÍO NEGRO', 'SALTA', 'SAN JUAN', 'SAN LUIS', 
-                                                              'SANTA CRUZ', 'SANTA FE', 'SANTIAGO DEL ESTERO', 'TIERRA DEL FUEGO', 'TUCUMÁN') 
-                                         AND provincia = UPPER(provincia)),
   CONSTRAINT CK_proveedor_estado CHECK(activo IN (0,1))
 );
+GO
+CREATE TABLE direccion
+(
+  cod_direccion INT IDENTITY CONSTRAINT PK_direccion PRIMARY KEY,
+  calle VARCHAR(50) NOT NULL,
+  numero VARCHAR(10) NOT NULL,
+  cod_postal VARCHAR(10) NOT NULL,
+  principal BIT NOT NULL CONSTRAINT DF_direccion_principal DEFAULT 0,
+  cod_localidad INT NOT NULL,
+  cod_cliente INT NULL,
+  cod_proveedor INT NULL,
+  CONSTRAINT FK_direccion_localidad FOREIGN KEY (cod_localidad) REFERENCES localidad(cod_localidad) ON DELETE NO ACTION ON UPDATE CASCADE,
+  CONSTRAINT FK_direccion_cliente FOREIGN KEY (cod_cliente) REFERENCES cliente(cod_cliente) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT FK_direccion_proveedor FOREIGN KEY (cod_proveedor) REFERENCES proveedor(cod_proveedor) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT CK_direccion_titular CHECK ((cod_cliente IS NOT NULL AND cod_proveedor IS NULL) OR (cod_cliente IS NULL AND cod_proveedor IS NOT NULL))
+);
+GO
+CREATE UNIQUE INDEX UQ_direccion_principal_cliente ON direccion(cod_cliente) WHERE principal = 1 AND cod_cliente IS NOT NULL;
+GO
+CREATE UNIQUE INDEX UQ_direccion_principal_proveedor ON direccion(cod_proveedor) WHERE principal = 1 AND cod_proveedor IS NOT NULL;
 GO
 CREATE TABLE metodo_pago
 (
@@ -142,7 +163,7 @@ CREATE TABLE compra
   cod_compra INT IDENTITY CONSTRAINT PK_compra PRIMARY KEY,
   fecha DATETIME NOT NULL CONSTRAINT DF_compra_fecha DEFAULT GETDATE(),
   estado VARCHAR(20) NOT NULL CONSTRAINT DF_compra_estado DEFAULT 'pendiente',
-  nro_comprobante_prov VARCHAR(50) NULL,
+  nro_comprobante_prov VARCHAR(50) NOT NULL CONSTRAINT DF_compra_nro_comprobante_prov DEFAULT 'S/N',
   cod_proveedor INT NOT NULL,
   cod_usuario INT NOT NULL,
   CONSTRAINT FK_compra_proveedor FOREIGN KEY (cod_proveedor) REFERENCES proveedor(cod_proveedor) ON DELETE NO ACTION ON UPDATE CASCADE,
@@ -223,20 +244,20 @@ GO
 CREATE TABLE promocion (
     cod_promocion        INT IDENTITY(1,1) NOT NULL,
     nombre               VARCHAR(100)      NOT NULL,
-    descripcion          VARCHAR(500)      NULL,
+    descripcion          VARCHAR(500)      NOT NULL,
     fecha_inicio         DATETIME          NOT NULL,
     fecha_fin            DATETIME          NOT NULL,
-    porcentaje_descuento DECIMAL(5,2)      NULL,
-    nro_cuotas           INT               NULL,
+    porcentaje_descuento DECIMAL(5,2)      NOT NULL CONSTRAINT DF_promocion_descuento DEFAULT 0,
+    nro_cuotas           INT               NOT NULL CONSTRAINT DF_promocion_cuotas DEFAULT 1,
     CONSTRAINT PK_promocion PRIMARY KEY (cod_promocion),
     CONSTRAINT CK_promocion_fechas
         CHECK (fecha_fin >= fecha_inicio),
     CONSTRAINT CK_promocion_descuento
-        CHECK (porcentaje_descuento > 0 AND porcentaje_descuento <= 75),
+        CHECK (porcentaje_descuento >= 0 AND porcentaje_descuento <= 75),
     CONSTRAINT CK_promocion_cuotas
-        CHECK (nro_cuotas BETWEEN 2 AND 36),
+        CHECK (nro_cuotas BETWEEN 1 AND 36),
     CONSTRAINT CK_promocion_beneficio
-        CHECK (porcentaje_descuento IS NOT NULL OR nro_cuotas IS NOT NULL)
+        CHECK (porcentaje_descuento > 0 OR nro_cuotas > 1)
 );
 GO
 CREATE TABLE promocion_producto (

@@ -8,23 +8,26 @@ GO
 
 --   1  Clientes de alto valor: clientes cuyo total comprado supera
 --      el promedio de compra por cliente.
---      Tablas: cliente, pedido, detalle_pedido
+--      Tablas: cliente, direccion, localidad, provincia, pedido, detalle_pedido
 --      Tecnica: GROUP BY + HAVING con subconsulta escalar (que a su
 --      vez usa una tabla derivada) para calcular el promedio.
 -- ---------------------------------------------------------------
 SELECT
     c.cod_cliente, c.nombre + ' ' + c.apellido AS cliente,
-    c.ciudad, c.provincia,  COUNT(DISTINCT p.cod_pedido) AS cant_pedidos,
+    loc.nombre AS ciudad, prov.nombre AS provincia,  COUNT(DISTINCT p.cod_pedido) AS cant_pedidos,
     SUM(dp.cantidad * dp.precio_unitario_venta)          AS total_comprado,
     SUM(dp.cantidad * dp.precio_unitario_venta)
         / COUNT(DISTINCT p.cod_pedido)                   AS ticket_promedio,
     MAX(p.fecha_pedido)                                  AS ultimo_pedido
 FROM cliente c
+LEFT JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 INNER JOIN pedido         p  ON p.cod_cliente = c.cod_cliente   --Solo clientes con pedido
 INNER JOIN detalle_pedido dp ON dp.cod_pedido = p.cod_pedido
 WHERE p.estado = 'confirmado'
   AND p.estado_pago = 'aprobado'
-GROUP BY c.cod_cliente, c.nombre, c.apellido, c.ciudad, c.provincia
+GROUP BY c.cod_cliente, c.nombre, c.apellido, loc.nombre, prov.nombre
 HAVING SUM(dp.cantidad * dp.precio_unitario_venta) >
        (SELECT AVG(t.total_cliente) --Monto promedio
         FROM (SELECT SUM(dp2.cantidad * dp2.precio_unitario_venta) AS total_cliente --Monto comprado por cada cliente
@@ -77,20 +80,23 @@ ORDER BY margen_producto;
 
 -- 3  Proveedores principales: proveedores cuyo monto comprado
 --      (compras recibidas) supera el promedio por proveedor.
---      Tablas: proveedor, compra, detalle_compra
+--      Tablas: proveedor, direccion, localidad, provincia, compra, detalle_compra
 --      Tecnica: GROUP BY + HAVING con subconsulta escalar.
 -- ---------------------------------------------------------------
 SELECT
-    pv.cod_proveedor, pv.razon_social, pv.provincia,
+    pv.cod_proveedor, pv.razon_social, prov.nombre AS provincia,
     COUNT(DISTINCT co.cod_compra)   AS compras_recibidas,
     COUNT(DISTINCT dc.cod_producto) AS productos_distintos,
     SUM(dc.cantidad)                AS unidades,
     SUM(dc.cantidad * dc.costo_unitario)  AS monto_comprado
 FROM proveedor pv             --Proveedores con compra
+LEFT JOIN direccion dir ON dir.cod_proveedor = pv.cod_proveedor AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 INNER JOIN compra         co ON co.cod_proveedor = pv.cod_proveedor
 INNER JOIN detalle_compra dc ON dc.cod_compra    = co.cod_compra
 WHERE co.estado = 'recibida'
-GROUP BY pv.cod_proveedor, pv.razon_social, pv.provincia
+GROUP BY pv.cod_proveedor, pv.razon_social, prov.nombre
 HAVING SUM(dc.cantidad * dc.costo_unitario) >
        (SELECT AVG(t.monto)  --Promedio de monto comprado a cada proveedor
         FROM (SELECT SUM(dc2.cantidad * dc2.costo_unitario) AS monto  --Monto comprado por cada proveedor
@@ -102,13 +108,16 @@ ORDER BY monto_comprado DESC;
 
 --   4  Clientes sin compras concretadas
 --      Clientes registrados que nunca tuvieron una venta (pedido confirmado y pagado).
---      Tablas: cliente, pedido
+--      Tablas: cliente, direccion, localidad, provincia, pedido
 --      Tecnica: NOT EXISTS (subconsulta correlacionada) + subconsulta escalar en el SELECT.
 -- ---------------------------------------------------------------
-SELECT c.cod_cliente, c.nombre + ' ' + c.apellido AS cliente, c.ciudad, c.provincia, c.fecha_registro,
+SELECT c.cod_cliente, c.nombre + ' ' + c.apellido AS cliente, loc.nombre AS ciudad, prov.nombre AS provincia, c.fecha_registro,
     (SELECT COUNT(*) FROM pedido p2
      WHERE p2.cod_cliente = c.cod_cliente) AS pedidos_registrados
 FROM cliente c
+LEFT JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 WHERE NOT EXISTS (SELECT 1
                   FROM pedido p
                   WHERE p.cod_cliente = c.cod_cliente
@@ -137,15 +146,18 @@ ORDER BY total_operaciones DESC, t.cod_usuario;
 
 --   6  Clientes que compraron productos de una categoria
 --      Cambiar @categoria por el nombre de otra categoria (ej. 'Celulares').
---      Tablas: cliente, pedido, detalle_pedido, producto, categoria
+--      Tablas: cliente, direccion, localidad, provincia, pedido, detalle_pedido, producto, categoria
 --      Tecnica: IN con subconsultas anidadas en 4 niveles. IN no duplica clientes aunque
 --      hayan comprado el producto en varios pedidos.
 -- ---------------------------------------------------------------
 DECLARE @categoria VARCHAR(50) = 'Audio';
 
 SELECT
-    c.cod_cliente,    c.nombre + ' ' + c.apellido AS cliente, c.ciudad, c.provincia
+    c.cod_cliente,    c.nombre + ' ' + c.apellido AS cliente, loc.nombre AS ciudad, prov.nombre AS provincia
 FROM cliente c
+LEFT JOIN direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 WHERE c.cod_cliente IN
       (SELECT p.cod_cliente
        FROM pedido p
@@ -194,15 +206,18 @@ ORDER BY p.cod_producto;
 
 --   8  Proveedores sin compras recibidas
 --      Proveedores dados de alta que todavia no concretaron ninguna compra.
---      Tablas: proveedor, compra
+--      Tablas: proveedor, direccion, localidad, provincia, compra
 --      Tecnica: NOT EXISTS + subconsulta escalar. Se prefiere a NOT IN porque NOT IN
 --      devuelve un resultado vacio si la subconsulta contiene algun NULL.
 -- ---------------------------------------------------------------
 SELECT
-    pv.cod_proveedor, pv.razon_social, pv.provincia,
+    pv.cod_proveedor, pv.razon_social, prov.nombre AS provincia,
     (SELECT COUNT(*) FROM compra co2
      WHERE co2.cod_proveedor = pv.cod_proveedor) AS compras_registradas
 FROM proveedor pv
+LEFT JOIN direccion dir ON dir.cod_proveedor = pv.cod_proveedor AND dir.principal = 1
+LEFT JOIN localidad loc ON loc.cod_localidad = dir.cod_localidad
+LEFT JOIN provincia prov ON prov.cod_provincia = loc.cod_provincia
 WHERE NOT EXISTS (SELECT 1
                   FROM compra co
                   WHERE co.cod_proveedor = pv.cod_proveedor

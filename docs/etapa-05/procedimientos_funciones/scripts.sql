@@ -26,7 +26,7 @@ GO
 -- Funcion 1: descuento vigente de un producto en una fecha
 -- Si el producto tiene mas de una promocion vigente, se aplica
 -- la de mayor descuento (RN.24). Las promociones que solo
--- ofrecen cuotas (porcentaje NULL) no cuentan como descuento.
+-- ofrecen cuotas (porcentaje 0) no cuentan como descuento.
 -- Devuelve 0 si no hay promocion con descuento.
 -- -------------------------------------------------------------
 CREATE OR ALTER FUNCTION dbo.fn_descuento_vigente
@@ -42,8 +42,7 @@ BEGIN
          FROM dbo.promocion pr
          INNER JOIN dbo.promocion_producto pp ON pp.cod_promocion = pr.cod_promocion
          WHERE pp.cod_producto = @cod_producto
-           AND @fecha BETWEEN pr.fecha_inicio AND pr.fecha_fin
-           AND pr.porcentaje_descuento IS NOT NULL),
+           AND @fecha BETWEEN pr.fecha_inicio AND pr.fecha_fin),
         0);
 END;
 GO
@@ -100,10 +99,10 @@ GO
 -- -------------------------------------------------------------
 -- Procedimiento: registrar una venta completa
 -- Pasos:
---   1. Validar cliente, metodo de pago, referencia de pago y productos.
+--   1. Validar cliente, direccion, metodo de pago, referencia de pago y productos.
 --   2. Verificar stock de todos los productos (RN.11).
---   3. Insertar el pedido confirmado/aprobado, con la direccion
---      registrada del cliente (RN.04) y fecha actual (RN.16).
+--   3. Insertar el pedido confirmado/aprobado, con la direccion principal
+--      del cliente o la indicada en @cod_direccion (RN.04) y fecha actual (RN.16).
 --   4. Insertar el detalle congelando precio, alicuota e IVA (RN.03, RN.19, RN.28).
 --   5. Descontar el stock (RN.09).
 -- Si algo falla se deshace todo y se re-lanza el error.
@@ -115,13 +114,15 @@ GO
 --   50004 producto inexistente o inactivo
 --   50005 stock insuficiente
 --   50006 falta la referencia de la transaccion de pago
+--   50007 la direccion no existe o no es del cliente
 -- -------------------------------------------------------------
 CREATE OR ALTER PROCEDURE dbo.sp_registrar_venta_completa
     @cod_cliente     INT,
     @cod_metodo_pago INT,
     @ref_transaccion VARCHAR(50),
     @items           dbo.tipo_items_pedido READONLY,
-    @cod_pedido      INT OUTPUT
+    @cod_pedido      INT OUTPUT,
+    @cod_direccion   INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -137,6 +138,16 @@ BEGIN
         -- 1. Validaciones
         IF NOT EXISTS (SELECT 1 FROM dbo.cliente WHERE cod_cliente = @cod_cliente AND activo = 1)
             THROW 50001, 'Cliente inexistente o inactivo.', 1;
+
+        -- Si no se indica una direccion, se usa la principal (RN.04)
+        IF @cod_direccion IS NULL
+            SELECT @cod_direccion = cod_direccion
+            FROM dbo.direccion
+            WHERE cod_cliente = @cod_cliente AND principal = 1;
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.direccion
+                       WHERE cod_direccion = @cod_direccion AND cod_cliente = @cod_cliente)
+            THROW 50007, 'La direccion no existe o no es del cliente.', 1;
 
         IF NOT EXISTS (SELECT 1 FROM dbo.metodo_pago WHERE cod_metodo_pago = @cod_metodo_pago)
             THROW 50002, 'Metodo de pago inexistente.', 1;
@@ -167,9 +178,12 @@ BEGIN
              calle, numero, ciudad, provincia, cod_postal,
              cod_cliente, cod_metodo_pago)
         SELECT 'confirmado', 'aprobado', @ref_transaccion,
-               c.calle, c.numero, c.ciudad, c.provincia, c.cod_postal,
+               dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal,
                c.cod_cliente, @cod_metodo_pago
         FROM dbo.cliente c
+        INNER JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.cod_direccion = @cod_direccion
+        INNER JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        INNER JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
         WHERE c.cod_cliente = @cod_cliente;
 
         SET @cod_pedido = SCOPE_IDENTITY();
