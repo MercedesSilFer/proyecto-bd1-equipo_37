@@ -98,13 +98,14 @@ Las pruebas están en [scripts.sql](scripts.sql). La columna **Obtenido** indica
 | T3 | Atomicidad | Error 547; pedidos 12/12; detalles 18/18 | Sí | `03_atomicidad.png` |
 | T4 | Punto de guardado | Detalle 1→0 con el pedido vivo; tras el rollback total, 0 | Sí | `04_savepoint.png` |
 | T5 | Transacción del llamador | `tran_count` 1 y stock 39; tras el rollback, 40 y 0 | Sí | `05_transaccion_llamador.png` |
-| T6 | Cancelación de un pedido | Confirmado: stock 40→39→40; pendiente: stock sin cambios; errores 50008 a 50011 | Sí | Falta |
+| T6 | Cancelación de un pedido | Confirmado: stock 40→39→40; pendiente: stock sin cambios; errores 50008 a 50011 | Sí | `06_cancelacion_pedido.png` |
 
 Notas:
 
 - T1 crea un pedido y lo elimina al final, para no alterar los datos de las etapas anteriores.
 - T2, T3 y T4 terminan en `ROLLBACK`.
-- T6 se verificó ejecutando el script, y falta su captura. Sus pruebas que modifican datos se revierten.
+- La evidencia de T6 es la salida de `sqlcmd` sobre una base temporal recién cargada, no una captura de SSMS. Sus pruebas que modifican datos se revierten.
 - La cancelación no reintegra el pago: el reintegro corresponde a la pasarela, que queda fuera del alcance. El pedido deja de contar como venta porque ya no está confirmado.
+- El permiso que impide cambiar `estado` con un `UPDATE` directo está en [seguridad/scripts.sql](../seguridad/scripts.sql).
 - T5 demuestra que el procedimiento respeta la transacción del llamador (`@tran_propia`).
 - Al terminar, la base queda con 12 pedidos y 18 detalles.
