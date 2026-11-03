@@ -63,7 +63,7 @@ El descuento no modifica `producto.precio_lista`. Al confirmar la venta, el prec
 
 ## 13. Catálogo de alícuotas de IVA
 
-Las alícuotas se registran en la tabla `alicuota_iva` y cada producto la referencia mediante `cod_alicuota`. Si una norma modifica una alícuota, se actualiza una sola fila y todos los productos quedan al día. Como código se usa el que asigna ARCA a cada alícuota en la factura electrónica (3 = 0 %, 9 = 2,5 %, 8 = 5 %, 4 = 10,5 %, 5 = 21 %, 6 = 27 %), lo que facilita la integración con la facturación. `detalle_pedido.alicuota_iva` no referencia al catálogo: guarda una copia del porcentaje vigente al momento de la venta, para que los cambios posteriores no alteren ventas ni facturas ya emitidas (complementa la decisión 9).
+Las alícuotas se registran en la tabla `alicuota_iva` y cada producto la referencia mediante `cod_alicuota`. Si una norma modifica una alícuota, se actualiza una sola fila y todos los productos quedan al día. Como código se usa el que asigna ARCA a cada alícuota en la factura electrónica (3 = 0 %, 9 = 2,5 %, 8 = 5 %, 4 = 10,5 %, 5 = 21 %, 6 = 27 %), lo que facilita la integración con la facturación. Por eso la tabla tiene 6 filas, menos que las 8 a 10 de referencia: son todas las alícuotas que existen. `detalle_pedido.alicuota_iva` no referencia al catálogo: guarda una copia del porcentaje vigente al momento de la venta, para que los cambios posteriores no alteren ventas ni facturas ya emitidas (complementa la decisión 9).
 
 ## 14. Nombre y email del proveedor
 
@@ -96,4 +96,4 @@ El modelo no cubre todo lo que puede necesitar un comercio. Carrito de compras, 
 
 `pedido.estado` registra la cancelación, pero el stock se descuenta al confirmar la venta, así que cambiar solo el estado dejaría unidades de menos. Por eso `sp_cancelar_pedido` cambia el estado y repone el stock en una misma transacción (RN.30).
 
-No se permite cancelar un pedido facturado, porque anular un comprobante fiscal requiere una nota de crédito, ni uno despachado, porque ya sería una devolución: las dos quedan fuera del alcance. `estado_pago` no se modifica, ya que el reintegro corresponde a la pasarela. El rol `rol_aplicacion` no puede cambiar `estado` con un `UPDATE` directo, solo a través de los procedimientos (`docs/etapa-05/seguridad/scripts.sql`). Ese permiso no alcanza a `dbo` ni a `sysadmin`.
+No se permite cancelar un pedido facturado, porque anular un comprobante fiscal requiere una nota de crédito, ni uno despachado, porque ya sería una devolución: las dos quedan fuera del alcance. `estado_pago` no se modifica, ya que el reintegro corresponde a la pasarela. El rol `rol_aplicacion` no puede cambiar `estado` con un `UPDATE` directo, solo a través de los procedimientos (`sql/tecnico/seguridad/01_permisos_estado_pedido.sql`). Ese permiso no alcanza a `dbo` ni a `sysadmin`.

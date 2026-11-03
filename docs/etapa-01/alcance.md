@@ -1,5 +1,15 @@
 # Alcance del Sistema
 
+## Actores
+
+| Actor | Qué hace |
+|---|---|
+| Cliente | Se registra, administra sus direcciones y genera pedidos |
+| Depósito | Gestiona las compras a proveedores y confirma el despacho de pedidos |
+| Administrador | Gestiona el catálogo, las promociones, los usuarios y las facturas, y consulta la auditoría |
+| Soporte | Consulta el estado de pedidos y envíos |
+| Pasarela de pago (sistema externo) | Informa el resultado de cada pago |
+
 ## Funciones que cubrirá el sistema
 
 - **Gestión de clientes**: registro y autogestión de clientes (alta, login con email/contraseña, nombre completo y direcciones de envío).

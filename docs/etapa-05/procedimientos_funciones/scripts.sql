@@ -259,8 +259,7 @@ GO
 
 -- A3. Control: la funcion reproduce el precio congelado en los pedidos existentes.
 --     Lista solo los renglones donde el precio guardado NO coincide con la funcion.
--- Esperado: 0 filas o, a lo sumo, diferencias de 1 centavo (por ejemplo pedido 3,
---           producto 3), que vendrian de como se cargo el dato a mano, no de la funcion.
+-- Esperado: 0 filas.
 SELECT
     dp.cod_pedido,
     dp.cod_producto,
