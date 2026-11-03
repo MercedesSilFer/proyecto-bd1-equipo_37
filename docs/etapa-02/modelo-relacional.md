@@ -29,6 +29,31 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 
 ## Tablas
 
+### provincia
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_provincia | INT | PK |
+| nombre | VARCHAR | UQ |
+
+### localidad
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_localidad | INT | PK |
+| nombre | VARCHAR | UQ (nombre, cod_provincia) |
+| cod_provincia | INT | FK -> provincia |
+
+### direccion
+| Columna | Tipo Dato | Restricción |
+|---|---|---|
+| cod_direccion | INT | PK |
+| calle | VARCHAR | |
+| numero | VARCHAR | |
+| cod_postal | VARCHAR | |
+| principal | BIT | UQ filtrado (una por titular) |
+| cod_localidad | INT | FK -> localidad |
+| cod_cliente | INT | FK -> cliente (o cod_proveedor, uno solo) |
+| cod_proveedor | INT | FK -> proveedor (o cod_cliente, uno solo) |
+
 ### cliente
 | Columna | Tipo Dato | Restricción |
 |---|---|---|
@@ -37,11 +62,6 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | apellido | VARCHAR | |
 | email | VARCHAR | UQ |
 | contrasena_hash | VARCHAR | |
-| calle | VARCHAR | |
-| numero | VARCHAR | |
-| ciudad | VARCHAR | |
-| provincia | VARCHAR | |
-| cod_postal | VARCHAR | |
 | fecha_registro | DATE | |
 | activo | BIT | |
 | telefono | VARCHAR | |
@@ -68,7 +88,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | fecha_pedido | DATETIME | |
 | estado | VARCHAR | |
 | estado_pago | VARCHAR | |
-| ref_transaccion | VARCHAR | |
+| ref_transaccion | VARCHAR | Opcional |
 | calle | VARCHAR | |
 | numero | VARCHAR | |
 | ciudad | VARCHAR | |
@@ -97,7 +117,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | cod_producto | INT | PK |
 | nombre | VARCHAR | |
 | precio_lista | DECIMAL | |
-| descripcion | VARCHAR | Opcional |
+| descripcion | VARCHAR | |
 | cod_alicuota | INT | FK -> alicuota_iva |
 | stock | INT | |
 | cod_categoria | INT | FK -> categoria |
@@ -119,11 +139,9 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 |---|---|---|
 | cod_proveedor | INT | PK |
 | razon_social | VARCHAR | |
-| cuit | VARCHAR | UK |
-| calle | VARCHAR | |
-| numero | VARCHAR | |
-| ciudad | VARCHAR | |
-| provincia | VARCHAR | |
+| nombre | VARCHAR | |
+| email | VARCHAR | UQ |
+| cuit | VARCHAR | UQ |
 | activo | BIT | |
 
 ### compra
@@ -132,7 +150,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | cod_compra | INT | PK |
 | fecha | DATETIME | |
 | estado | VARCHAR | |
-| nro_comprobante_prov | VARCHAR | Opcional |
+| nro_comprobante_prov | VARCHAR | Por defecto 'S/N' |
 | cod_proveedor | INT | FK → proveedor |
 | cod_usuario | INT | FK → usuario |
 
@@ -188,11 +206,11 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 |---|---|---|
 | cod_promocion | INT | PK |
 | nombre | VARCHAR | |
-| descripcion | VARCHAR | Opcional |
+| descripcion | VARCHAR | |
 | fecha_inicio | DATETIME | |
 | fecha_fin | DATETIME | |
-| porcentaje_descuento | DECIMAL | Opcional |
-| nro_cuotas | INT | Opcional |
+| porcentaje_descuento | DECIMAL | Por defecto 0 |
+| nro_cuotas | INT | Por defecto 1 |
 
 ### promocion_producto
 | Columna | Tipo Dato | Restricción |
@@ -231,11 +249,10 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 
 ## Descripciones del mapeo
 
-En el DER propuesto para el sistema, las entidades fuertes son: cliente, pedido, metodo_pago, producto, categoria, usuario, proveedor, compra, factura, auditoria, alicuota_iva, promocion, slide, multimedia y especificacion.
+En el DER propuesto para el sistema, las entidades fuertes son: cliente, pedido, metodo_pago, producto, categoria, usuario, proveedor, compra, factura, auditoria, provincia, localidad, direccion, alicuota_iva, promocion, slide, multimedia y especificacion.
 
-Los atributos compuestos del DER (nombre_completo, direccion, destino_envio) se descomponen en sus componentes simples como columnas independientes:
+Los atributos compuestos del DER (nombre_completo, destino_envio) se descomponen en sus componentes simples como columnas independientes:
 nombre_completo -> nombre + apellido.
-direccion -> calle + numero,
 destino_envio -> calle + numero + ciudad + provincia + cod_postal.
 
 Relación 0:1 -> usuario (0..1) — pedido (N) -> pedido.cod_usuario FK (Opcional), ya que un usuario puede gestionar cero o varios pedidos, pero no todo pedido tiene necesariamente un usuario que lo gestione.
@@ -243,7 +260,11 @@ Relación 0:1 -> usuario (0..1) — pedido (N) -> pedido.cod_usuario FK (Opciona
 Relación 1:N -> clave foránea en el lado "N". La entidad del lado "muchos" incorpora como FK la clave primaria de la entidad del lado "uno":
 categoria (1) — producto (N) -> producto.cod_categoria FK, 
 cliente (1) — Pedido (N) -> pedido.cod_cliente FK, 
-metodo_pago (1) — pedido (N) -> metodo_pago.cod_metodo_pago FK, 
+provincia (1) — localidad (N) -> localidad.cod_provincia FK, 
+localidad (1) — direccion (N) -> direccion.cod_localidad FK, 
+cliente (1) — direccion (N) -> direccion.cod_cliente FK, 
+proveedor (1) — direccion (N) -> direccion.cod_proveedor FK, 
+metodo_pago (1) — pedido (N) -> pedido.cod_metodo_pago FK, 
 proveedor (1) — compra (N) -> compra.cod_proveedor FK,
 usuario (1) — compra (N) -> compra.cod_usuario FK,
 usuario (1) — factura (N) -> factura.cod_usuario FK,
@@ -252,16 +273,16 @@ alicuota_iva (1) — producto (N) -> producto.cod_alicuota FK,
 promocion (1) — slide (N) -> slide.cod_promocion FK,
 producto (1) — multimedia (N) -> multimedia.cod_producto FK.
 
-Relación recursiva 1:N (opcional): categoria (0..1) — categoria (N) -> categoria.cod_categoria_padre FK (Opcional), que referencia a la misma tabla para representar la jerarquía categoría–subcategoría (por ejemplo, "Audio" dentro de "Electrónica"). Las categorías de primer nivel tienen cod_categoria_padre en NULL.
+Relación recursiva 1:N (opcional): categoria (0..1) — categoria (N) -> categoria.cod_categoria_padre FK (Opcional), que referencia a la misma tabla para representar la jerarquía categoría–subcategoría (por ejemplo, "Audio" dentro de "Electrónica"). Las categorías de primer nivel tienen cod_categoria_padre en NULL. En el DER este dato figura como el atributo opcional categoria_padre de categoria.
 
 Relación 1:1 opcional: pedido (1) — factura (0..1). La FK se ubica en el lado de cardinalidad obligatoria hacia el otro, es decir en `factura` (factura.cod_pedido), ya que toda factura requiere obligatoriamente un pedido, mientras que un pedido puede no tener factura todavía (por ejemplo, si todavía no fue facturado). Para que la relación sea efectivamente 1:1, factura.cod_pedido lleva además una restricción UNIQUE (RN.17).
 
 Relación N:M: La relación pedido — producto (`contiene`) pasa a ser la tabla `detalle_pedido`, cuya PK combina las FK de ambas entidades participantes (cod_pedido, cod_producto).
 La relación compra — producto (`incluye`) pasa a ser la tabla `detalle_compra`, cuya PK combina las FK de ambas entidades participantes (cod_compra, cod_producto).
-La relación producto — promocion (`participa`) pasa a ser la tabla `promocion_producto`, cuya PK combina las FK de ambas entidades participantes (cod_promocion, cod_producto).
-La relación producto — especificacion (`posee`) pasa a ser la tabla `especificacion_producto`, cuya PK combina las FK de ambas entidades participantes (cod_producto, cod_especificacion).
+La relación producto — promocion, que en el DER es la entidad asociativa `promocion_producto`, pasa a ser la tabla del mismo nombre, cuya PK combina las FK de ambas entidades participantes (cod_promocion, cod_producto).
+La relación producto — especificacion, que en el DER es la entidad asociativa `especificacion_producto`, pasa a ser la tabla del mismo nombre, cuya PK combina las FK de ambas entidades participantes (cod_producto, cod_especificacion).
 
-Atributos de la relación N:M especificacion_producto: el atributo que colgaba del rombo "posee" (valor) pasa a ser columna de especificacion_producto, ya que depende de la combinación completa de ambas FK (el mismo tipo de especificación tiene distinto valor en cada producto).
+Atributos de la relación N:M especificacion_producto: el atributo de la entidad asociativa (valor) pasa a ser columna de especificacion_producto, ya que depende de la combinación completa de ambas FK (el mismo tipo de especificación tiene distinto valor en cada producto).
 
 Atributos de la relación N:M detalle_pedido: Los atributos que colgaban del rombo de relación en el DER (cantidad, precio_unitario_venta, alicuota_iva, iva_monto, item en "contiene") pasan a ser columnas de detalle_pedido, ya que dependen funcionalmente de la combinación completa de ambas FK.
 
@@ -269,34 +290,72 @@ Atributos de la relación N:M detalle_compra: Los atributos que colgaban del rom
 
 Los atributos marcados como "Derived" en el DER (monto_total de pedido, monto_total de compra y subtotal en las relaciones N:M "contiene" e "incluye") no se almacenan como columna física; se calculan en el momento de la consulta o mediante función/columna generada.
 
-Los atributos marcados (O)/Optional en el DER (estado_envio, transportista, nro_seguimiento, fecha_envio, fecha_entrega en pedido; nro_comprobante_prov en compra; tipo_documento_cliente, nro_documento_cliente, razon_social en factura; descripcion en producto; descripcion, porcentaje_descuento y nro_cuotas en promocion) se mantienen como columnas que admiten valores nulos.
+Los atributos marcados (O)/Optional en el DER (ref_transaccion, estado_envio, transportista, nro_seguimiento, fecha_envio, fecha_entrega en pedido; tipo_documento_cliente, nro_documento_cliente, razon_social en factura) se mantienen como columnas que admiten valores nulos.
+
+valor_anterior y valor_nuevo de auditoria también admiten nulos aunque no llevan la marca (O) en el DER, porque dependen de la operación: un INSERT no tiene valor anterior y un DELETE no tiene valor nuevo (ver decisión 15 en decisiones-diseno.md). cod_cliente y cod_proveedor de direccion admiten nulos porque cada dirección pertenece a uno solo de los dos.
 
 ## Diagrama relacional
 
 ```mermaid
 erDiagram
+    direction LR
+
+    %% Ubicacion: de izquierda a derecha
+    PROVINCIA ||--o{ LOCALIDAD : contiene
+    LOCALIDAD ||--o{ DIRECCION : ubica
+    DIRECCION }|--|| CLIENTE : "es de"
+    DIRECCION }o--|| PROVEEDOR : "es de"
+
+    %% Ventas
     CLIENTE ||--o{ PEDIDO : realiza
-    METODO_PAGO ||--o{ PEDIDO : tiene
-    USUARIO |o--o{ PEDIDO : gestiona
+    METODO_PAGO ||--o{ PEDIDO : "se paga con"
     PEDIDO ||--|{ DETALLE_PEDIDO : contiene
-    PRODUCTO ||--o{ DETALLE_PEDIDO : "incluido en"
-    CATEGORIA ||--o{ PRODUCTO : pertenece
-    CATEGORIA |o--o{ CATEGORIA : "subcategoria de"
     PEDIDO ||--o| FACTURA : emite
-    USUARIO ||--o{ FACTURA : confecciona
+
+    %% Compras
     PROVEEDOR ||--o{ COMPRA : provee
-    USUARIO ||--o{ COMPRA : registrado_por
     COMPRA ||--|{ DETALLE_COMPRA : incluye
-    PRODUCTO ||--o{ DETALLE_COMPRA : "incluido en"
-    USUARIO ||--o{ AUDITORIA : registra
-    ALICUOTA_IVA ||--o{ PRODUCTO : aplica
-    PRODUCTO ||--o{ PROMOCION_PRODUCTO : participa
-    PROMOCION ||--|{ PROMOCION_PRODUCTO : incluye
-    PROMOCION ||--o{ SLIDE : publica
+
+    %% Usuarios internos
+    USUARIO |o--o{ PEDIDO : gestiona
+    USUARIO ||--o{ FACTURA : confecciona
+    USUARIO ||--o{ COMPRA : registra
+    USUARIO ||--o{ AUDITORIA : audita
+
+    %% Catalogo: todo desemboca en producto
+    DETALLE_PEDIDO }o--|| PRODUCTO : "referencia"
+    DETALLE_COMPRA }o--|| PRODUCTO : "referencia"
+    PRODUCTO }o--|| CATEGORIA : pertenece
+    CATEGORIA |o--o{ CATEGORIA : "subcategoria de"
+    PRODUCTO }o--|| ALICUOTA_IVA : aplica
     PRODUCTO ||--o{ MULTIMEDIA : muestra
     PRODUCTO ||--o{ ESPECIFICACION_PRODUCTO : posee
-    ESPECIFICACION ||--o{ ESPECIFICACION_PRODUCTO : corresponde
+    ESPECIFICACION_PRODUCTO }o--|| ESPECIFICACION : corresponde
+    PRODUCTO ||--o{ PROMOCION_PRODUCTO : participa
+    PROMOCION_PRODUCTO }|--|| PROMOCION : incluye
+    PROMOCION ||--o{ SLIDE : publica
 
+    PROVINCIA {
+        INT cod_provincia PK
+        VARCHAR nombre UK
+    }
+
+    LOCALIDAD {
+        INT cod_localidad PK
+        VARCHAR nombre UK "UK compuesta con cod_provincia"
+        INT cod_provincia FK
+    }
+
+    DIRECCION {
+        INT cod_direccion PK
+        VARCHAR calle
+        VARCHAR numero
+        VARCHAR cod_postal
+        BIT principal
+        INT cod_localidad FK
+        INT cod_cliente FK "O"
+        INT cod_proveedor FK "O"
+    }
 
     CLIENTE {
         INT cod_cliente PK
@@ -304,17 +363,12 @@ erDiagram
         VARCHAR apellido
         VARCHAR email UK
         VARCHAR contrasena_hash
-        VARCHAR calle
-        VARCHAR numero
-        VARCHAR ciudad
-        VARCHAR provincia
-        VARCHAR cod_postal
         DATE fecha_registro
         BIT activo
         VARCHAR telefono
-        }
+    }
         
-        USUARIO {
+    USUARIO {
         INT cod_usuario PK
         VARCHAR nombre_usuario UK
         VARCHAR contrasena_hash
@@ -332,7 +386,7 @@ erDiagram
     PRODUCTO {
         INT cod_producto PK
         VARCHAR nombre
-        VARCHAR descripcion "O"
+        VARCHAR descripcion
         DECIMAL precio_lista
         INT cod_alicuota FK
         INT stock
@@ -350,7 +404,7 @@ erDiagram
         DATETIME fecha_pedido
         VARCHAR estado
         VARCHAR estado_pago
-        VARCHAR ref_transaccion
+        VARCHAR ref_transaccion "O"
         VARCHAR calle
         VARCHAR numero
         VARCHAR ciudad
@@ -379,11 +433,9 @@ erDiagram
     PROVEEDOR {
         INT cod_proveedor PK
         VARCHAR razon_social
+        VARCHAR nombre
+        VARCHAR email UK
         VARCHAR cuit UK
-        VARCHAR calle
-        VARCHAR numero
-        VARCHAR ciudad
-        VARCHAR provincia
         BIT activo
     }
 
@@ -391,7 +443,7 @@ erDiagram
         INT cod_compra PK
         DATETIME fecha
         VARCHAR estado
-        VARCHAR nro_comprobante_prov "O"
+        VARCHAR nro_comprobante_prov
         INT cod_proveedor FK
         INT cod_usuario FK
     }
@@ -428,8 +480,8 @@ erDiagram
         VARCHAR operacion
         INT registro_id
         DATETIME fecha
-        VARCHAR valor_anterior
-        VARCHAR valor_nuevo
+        VARCHAR valor_anterior "O"
+        VARCHAR valor_nuevo "O"
         INT cod_usuario FK
     }
 
@@ -442,11 +494,11 @@ erDiagram
     PROMOCION {
         INT cod_promocion PK
         VARCHAR nombre
-        VARCHAR descripcion "O"
+        VARCHAR descripcion
         DATETIME fecha_inicio
         DATETIME fecha_fin
-        DECIMAL porcentaje_descuento "O"
-        INT nro_cuotas "O"
+        DECIMAL porcentaje_descuento
+        INT nro_cuotas
     }
 
     PROMOCION_PRODUCTO {

@@ -111,7 +111,41 @@ En "pedido", los atributos "nombre_apellido", "email", "calle", "numero", "ciuda
 
 "detalle_pedido" y "producto" no sufren cambios en este paso: ya no tienen dependencias transitivas (cada atributo depende directamente de su clave).
 
-Con esto, "pedido", "detalle_pedido", "producto" y "cliente" alcanzan 3FN.
+En "cliente" queda otra **dependencia transitiva**: el cliente determina su localidad, y la localidad determina su provincia (cod_cliente -> cod_localidad -> provincia). Se extraen a las tablas "localidad" y "provincia". La localidad se identifica por nombre y provincia, porque puede haber nombres repetidos en provincias distintas. Además, los datos de dirección se agrupan en la tabla "direccion", que referencia al cliente porque un cliente puede tener varias direcciones (ver decisión 7 en decisiones-diseno.md). "cod_postal" queda en "direccion" y no en "localidad": una localidad puede tener varios códigos postales y un código puede abarcar varias localidades.
+
+**cliente (3FN)**
+
+| cod_cliente | nombre_apellido | email |
+|---|---|---|
+| 101 | Marcelo López | marcelo51@gmail.com |
+| 107 | Silvia Gauna | sgauna@gmail.com |
+| 110 | María Gómez | mgomez@gmail.com |
+
+**direccion**
+
+| cod_direccion | calle | numero | cod_postal | principal | cod_localidad | cod_cliente |
+|---|---|---|---|---|---|---|
+| 1 | Madariaga | 2145 | 3400 | 1 | 1 | 101 |
+| 2 | Av. Edison | 306 | H3500 | 1 | 2 | 107 |
+| 3 | Chubut | 3580 | N3301 | 1 | 3 | 110 |
+
+**localidad**
+
+| cod_localidad | nombre | cod_provincia |
+|---|---|---|
+| 1 | Capital | 1 |
+| 2 | Resistencia | 2 |
+| 3 | Posadas | 3 |
+
+**provincia**
+
+| cod_provincia | nombre |
+|---|---|
+| 1 | Corrientes |
+| 2 | Chaco |
+| 3 | Misiones |
+
+Con esto, "pedido", "detalle_pedido", "producto", "cliente", "direccion", "localidad" y "provincia" alcanzan 3FN.
 
 Los atributos que a simple vista podrían parecer una dependencia transitiva sin resolver ("precio_unitario_venta" en "detalle_pedido", "alicuota_iva" que se agregará en el modelo final también en "detalle_pedido", los datos de dirección de envío en el pedido, los datos fiscales del cliente en factura), son atributos históricos: son valores capturados en un momento del proceso y guardados por decisión de modelado, no como referencias a la entidad de origen (ver decisiones-diseno.md).
 
@@ -157,7 +191,7 @@ Se elimina el grupo repetitivo (varios productos por compra en la misma fila) se
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 201 | 2/9/2024 | Confirmada | 0003-00012458 | 12 | Distribuidora Norte S.A. | 30-71234567-8 | Av. Independencia | 1850 | Capital | Corrientes | 3 | lramirez | Depósito |
 | 202 | 3/9/2024 | Confirmada | 0001-00004521 | 15 | ElectroHogar Litoral S.R.L. | 30-70987654-3 | Av. Sarmiento | 1200 | Resistencia | Chaco | 3 | lramirez | Depósito |
-| 203 | 8/9/2024 | Pendiente | NULL | 15 | ElectroHogar Litoral S.R.L. | 30-70987654-3 | Av. Sarmiento | 1200 | Resistencia | Chaco | 4 | mfernandez | Depósito |
+| 203 | 8/9/2024 | Pendiente | S/N | 15 | ElectroHogar Litoral S.R.L. | 30-70987654-3 | Av. Sarmiento | 1200 | Resistencia | Chaco | 4 | mfernandez | Depósito |
 
 **detalle_compra**
 
@@ -211,7 +245,9 @@ En "compra" hay dos **dependencias transitivas**:
 |---|---|---|---|---|---|
 | 201 | 2/9/2024 | Confirmada | 0003-00012458 | 12 | 3 |
 | 202 | 3/9/2024 | Confirmada | 0001-00004521 | 15 | 3 |
-| 203 | 8/9/2024 | Pendiente | NULL | 15 | 4 |
+| 203 | 8/9/2024 | Pendiente | S/N | 15 | 4 |
+
+El estado "Confirmada" de la planilla corresponde al estado "recibida" del modelo final.
 
 **proveedor**
 
@@ -228,6 +264,24 @@ En "compra" hay dos **dependencias transitivas**:
 | 4 | mfernandez | Depósito |
 
 En "proveedor", "cuit" es clave candidata (cuit -> cod_proveedor), así que no genera una dependencia transitiva: se mantiene en la tabla con restricción de unicidad (UQ).
+
+En "proveedor", "ciudad" y "provincia" presentan la misma dependencia transitiva que en "cliente" (cod_proveedor -> cod_localidad -> provincia), por lo que su dirección también pasa a la tabla "direccion" (ver sección 5):
+
+**proveedor (3FN)**
+
+| cod_proveedor | razon_social | nombre | email | cuit |
+|---|---|---|---|---|
+| 12 | Distribuidora Norte S.A. | Distribuidora Norte | ventas@distribuidoranorte.example | 30-71234567-8 |
+| 15 | ElectroHogar Litoral S.R.L. | ElectroHogar Litoral | ventas@electrohogarlitoral.example | 30-70987654-3 |
+
+"nombre" y "email" no venían en la planilla original: se agregan en este paso (ver decisión 14 en decisiones-diseno.md). Dependen directamente de "cod_proveedor", así que no afectan la 3FN.
+
+**direccion**
+
+| cod_direccion | calle | numero | cod_postal | principal | cod_localidad | cod_proveedor |
+|---|---|---|---|---|---|---|
+| 4 | Av. Independencia | 1850 | 3400 | 1 | 1 | 12 |
+| 5 | Av. Sarmiento | 1200 | H3500 | 1 | 2 | 15 |
 
 "detalle_compra" y "producto" no sufren cambios en este paso: cada atributo depende directamente de su clave.
 
