@@ -17,7 +17,7 @@ Una **transacción** es una unidad de trabajo que se ejecuta completa o no se ej
 |---|---|
 | Atomicidad | Pedido + detalle + stock, todo o nada |
 | Consistencia | No se vende sin stock (RN.11); se cumplen CHECK y FK |
-| Aislamiento | Dos ventas simultáneas no ven stock intermedio |
+| Aislamiento | El procedimiento bloquea las filas de los productos (`UPDLOCK, HOLDLOCK`) hasta terminar la venta; no se probó con dos sesiones simultáneas |
 | Durabilidad | Después del `COMMIT`, la venta persiste |
 
 ## 2. Ventajas y aplicaciones
@@ -64,7 +64,7 @@ END CATCH;
 - **RN.09:** el stock baja al confirmarse la venta.
 - **RN.11:** no se vende si el stock es insuficiente.
 - **RN.10:** el total se calcula desde el detalle.
-- **RN.04 y RN.16:** el pedido usa la dirección registrada del cliente y la fecha actual.
+- **RN.04 y RN.16:** el pedido usa la dirección principal del cliente, u otra de las suyas indicada en `@cod_direccion`, y la fecha actual. El procedimiento todavía no permite escribir una dirección solo para ese pedido, como prevé RN.04.
 
 **Qué se prueba en cada bloque:**
 

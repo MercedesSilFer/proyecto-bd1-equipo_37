@@ -39,11 +39,11 @@ Una **función** recibe parámetros y devuelve un valor (o una tabla). A diferen
 - **RN.10:** el total del pedido no se guarda; se calcula (`fn_total_pedido`).
 - **RN.11:** un pedido no se confirma si el stock es insuficiente.
 - **RN.09:** al confirmarse el pedido, el stock baja.
-- **RN.04 y RN.16:** el pedido usa la dirección registrada del cliente y la fecha actual.
+- **RN.04 y RN.16:** el pedido usa la dirección principal del cliente, u otra de las suyas indicada en `@cod_direccion`, y la fecha actual. El procedimiento todavía no permite escribir una dirección solo para ese pedido, como prevé RN.04.
 
 **Qué hace `sp_registrar_venta_completa`:**
  
-1. Valida cliente activo, método de pago, referencia de pago y productos.
+1. Valida cliente activo, dirección, método de pago, referencia de pago y productos.
 2. Verifica el stock de todos los productos.
 3. Inserta el pedido (confirmado y con pago aprobado).
 4. Inserta el detalle con el precio final de `fn_precio_final`.
@@ -60,19 +60,20 @@ Todo ocurre dentro de una transacción: si algo falla, no queda nada guardado.
 | 50004 | Producto inexistente o inactivo |
 | 50005 | Stock insuficiente |
 | 50006 | Falta la referencia de la transacción de pago |
+| 50007 | La dirección no existe o no es del cliente |
  
 ## 5. Demostración y resultados
  
-Las pruebas están en la parte 2 de [scripts.sql](scripts.sql). El resultado esperado se calculó a partir de `cargar_datos.sql`; La columna **Obtenido** indica si el resultado de la captura coincide con el esperado.
+Las pruebas están en la parte 2 de [scripts.sql](scripts.sql). El resultado esperado se calculó a partir de `cargar_datos.sql`. La columna **Obtenido** indica si el resultado de la captura coincide con el esperado.
  
 | Prueba | Caso | Resultado esperado | Obtenido | Captura |
 |---|---|---|---|---|
-| A1 | Descuento y precio final al 20/09/2026 | Producto 4: descuento 35 % y precio 5200,00; el resto sin descuento | Si | `01_funciones_precio.png` |
-| A2 | Total de los pedidos 1, 2 y 9 | 245.000,00 / 89.250,00 / 405.000,01 | Si | `02_total_pedido.png` |
-| A3 | Función contra precios ya guardados | 0 filas o diferencias | Si | `03_control_precios.png` |
-| B1 | Venta correcta (2 auriculares + 1 funda) | Pedido creado, total 58.000,00, stock 40→38 y 30→29 | Si | `04_venta_correcta.png` |
-| B2 | Stock insuficiente (6 lavarropas, hay 5) | Error 50005, sin pedido nuevo, stock sin cambios | Si | `05_stock_insuficiente.png` |
-| B3 | Cliente inexistente | Error 50001 | Si | `06_cliente_inexistente.png` |
+| A1 | Descuento y precio final al 20/09/2026 | Producto 4: descuento 35 % y precio 5200,00; el resto sin descuento | Sí | `01_funciones_precio.png` |
+| A2 | Total de los pedidos 1, 2 y 9 | 245.000,00 / 89.250,00 / 405.000,01 | Sí | `02_total_pedido.png` |
+| A3 | Función contra precios ya guardados | 0 filas | Sí | `03_control_precios.png` |
+| B1 | Venta correcta (2 auriculares + 1 funda) | Pedido creado, total 58.000,00, stock 40→38 y 30→29 | Sí | `04_venta_correcta.png` |
+| B2 | Stock insuficiente (6 lavarropas, hay 5) | Error 50005, sin pedido nuevo, stock sin cambios | Sí | `05_stock_insuficiente.png` |
+| B3 | Cliente inexistente | Error 50001 | Sí | `06_cliente_inexistente.png` |
  
 Notas:
  

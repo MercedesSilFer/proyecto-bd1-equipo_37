@@ -17,7 +17,7 @@ Sirve para reglas que no se pueden escribir con `CHECK` o `FOREIGN KEY`, y para 
 
 - La regla vive en la base: no depende de que cada aplicación se acuerde de auditar.
 - Se ejecuta en la misma transacción que la sentencia: si la auditoría falla, el cambio también se revierte.
-- No se puede saltear con un `UPDATE` hecho a mano en SSMS.
+- También se dispara con un `UPDATE` hecho a mano en SSMS, aunque quien tenga permisos puede apagarlo con `DISABLE TRIGGER`.
 - Guarda el valor anterior y el nuevo, algo que un `CHECK` no puede hacer.
 
 Cuidados:
@@ -88,7 +88,7 @@ Ideas clave:
 EXEC sys.sp_set_session_context @key = N'cod_usuario', @value = 3;
 ```
 
-Si la sesión no lo fijó, el trigger usa el usuario 1 (`mgonzalez`, administrador) como usuario del sistema, para que la auditoría no falle por ese motivo.
+Si la sesión no lo fijó, el trigger usa el usuario 1 (`mgonzalez`, administrador) como usuario del sistema, para que la auditoría no falle por ese motivo. Limitación: en ese caso el cambio queda a nombre de ese usuario aunque lo haya hecho otra persona, y la tabla no guarda el login de la base de datos.
 
 **Formato de los valores:** texto corto con los campos que cambiaron, por ejemplo `precio_lista=20661.16; stock=40`. La fecha la completa el `DEFAULT GETDATE()` de la tabla.
 
@@ -111,5 +111,5 @@ Notas:
 
 - A1, A2 y A5 revierten el cambio y borran las filas de auditoría que generaron.
 - A3 hace `ROLLBACK`: la auditoría desaparece con la venta, porque es transaccional.
-- A4 falla antes de escribir: demuestra que no se puede cambiar un dato sensible sin dejar auditoría.
+- A4: el `UPDATE` se ejecuta, pero el trigger no puede insertar en `auditoria` (FK) y el cambio se revierte: si la auditoría falla, el cambio no se aplica.
 - Al terminar, `auditoria` vuelve a 10 filas y el stock queda como en la Etapa IV.
