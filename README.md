@@ -22,7 +22,7 @@ La base de datos cubre clientes, catálogo de productos, promociones, compras a 
 | IV. Consultas | 15 casos de uso: comprobante, reporte agregado y consultas avanzadas | Completa | [docs/etapa-04](docs/etapa-04/) |
 | V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | En curso | [docs/etapa-05](docs/etapa-05/) |
 
-En la Etapa V, tres temas tienen documentación, scripts y capturas, y todavía tienen tareas pendientes. Índices está completo, salvo sus capturas de SSMS. De Seguridad solo está el permiso sobre el estado del pedido. `sql/tecnico/` tiene scripts adicionales de procedimientos, funciones y transacciones, todavía sin documentación ni capturas, y algunos de sus objetos repiten los de `docs/etapa-05/`.
+En la Etapa V, tres temas tienen documentación, scripts y capturas, y todavía tienen tareas pendientes. Índices y Seguridad tienen sus scripts y su documentación. `sql/tecnico/` tiene scripts adicionales de procedimientos, funciones y transacciones, todavía sin documentación ni capturas, y algunos de sus objetos repiten los de `docs/etapa-05/`.
 
 ## Cómo ejecutarlo
 
@@ -39,6 +39,7 @@ Ejecutar en este orden:
 | 5 | [transacciones/scripts.sql](docs/etapa-05/transacciones/scripts.sql) | Crea la cancelación de pedidos y corre las pruebas de transacciones (usa el paso 4) |
 | 6 | [triggers_auditoria/scripts.sql](docs/etapa-05/triggers_auditoria/scripts.sql) | Crea los triggers de auditoría y corre sus pruebas (usa el paso 4) |
 | 7 | [seguridad/01_permisos_estado_pedido.sql](sql/tecnico/seguridad/01_permisos_estado_pedido.sql) | Crea el rol de la aplicación, le impide cambiar `estado` sin los procedimientos y corre sus pruebas (usa los pasos 4 y 5) |
+| 8 | [seguridad/02_usuarios_y_roles.sql](sql/tecnico/seguridad/02_usuarios_y_roles.sql) | Crea usuarios y un rol de demostración y corre sus pruebas (usa el paso 4). Se limpia con `99_limpieza_usuarios.sql` |
 
 Ejemplo con `sqlcmd`, desde la raíz del repositorio:
 
