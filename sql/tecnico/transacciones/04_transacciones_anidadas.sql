@@ -67,7 +67,7 @@ BEGIN TRANSACTION;
     -- Un error de negocio dentro del procedimiento revierte solo su parte
     BEGIN TRY
         EXEC dbo.usp_registrar_venta @cod_cliente = 1, @cod_metodo_pago = 1,
-             @cod_producto = 2, @cantidad = 99999, @cod_pedido = @pedido OUTPUT;
+             @cod_producto = 2, @cantidad = 9999, @cod_pedido = @pedido OUTPUT;
     END TRY
     BEGIN CATCH
         PRINT 'Venta rechazada: ' + ERROR_MESSAGE();

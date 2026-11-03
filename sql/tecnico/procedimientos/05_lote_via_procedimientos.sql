@@ -1,4 +1,4 @@
-
+﻿
 -- Procedimientos: LOTE 2 de datos invocando al procedimiento
 -- usp_producto_insertar. Los productos de este lote llevan el prefijo
 -- "LOTE-P" y son los MISMOS 5 productos del lote 04 ("LOTE-A"), con los

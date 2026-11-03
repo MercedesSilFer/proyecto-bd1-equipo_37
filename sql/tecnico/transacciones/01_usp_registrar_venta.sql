@@ -3,13 +3,13 @@
 -- SmartHome Store (equipo 37) - SQL Server
 --
 -- Registra una venta completa de un producto como UNA unidad de trabajo:
---   1) encabezado del pedido (con la dirección registrada del cliente)
+--   1) encabezado del pedido (con la dirección principal del cliente)
 --   2) renglón de detalle con precio e IVA congelados
 --   3) descuento de stock
 -- Si cualquier paso falla se revierte todo (atomicidad).
 --
 -- Reglas de negocio vinculadas
---   RN.04  El pedido toma la dirección registrada del cliente.
+--   RN.04  El pedido toma la dirección principal del cliente.
 --   RN.09  El stock baja al confirmarse el pedido.
 --   RN.11  No se confirma un pedido si el stock es insuficiente.
 --   RN.19  El precio final con IVA se congela en el detalle.
@@ -66,14 +66,17 @@ BEGIN
 
         SET @precio_final = ROUND(@precio_base * (1 - @descuento / 100.0), 2);
 
-        -- 1) Encabezado del pedido con la dirección registrada del cliente (RN.04)
+        -- 1) Encabezado del pedido con la dirección principal del cliente (RN.04)
         INSERT INTO dbo.pedido (calle, numero, ciudad, provincia, cod_postal, cod_cliente, cod_metodo_pago, estado)
-        SELECT c.calle, c.numero, c.ciudad, c.provincia, c.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
+        SELECT dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
         FROM dbo.cliente c
+        JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
         WHERE c.cod_cliente = @cod_cliente AND c.activo = 1;
 
         IF @@ROWCOUNT = 0
-            THROW 50203, 'El cliente no existe o está inactivo.', 1;
+            THROW 50203, 'El cliente no existe, está inactivo o no tiene dirección principal.', 1;
 
         SET @cod_pedido = SCOPE_IDENTITY();
 

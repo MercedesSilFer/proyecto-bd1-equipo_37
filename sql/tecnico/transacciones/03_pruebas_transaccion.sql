@@ -37,8 +37,12 @@ BEGIN TRY
     BEGIN TRANSACTION;
 
         INSERT INTO dbo.pedido (calle, numero, ciudad, provincia, cod_postal, cod_cliente, cod_metodo_pago, estado)
-        SELECT c.calle, c.numero, c.ciudad, c.provincia, c.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
-        FROM dbo.cliente c WHERE c.cod_cliente = @cod_cliente;
+        SELECT dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
+        FROM dbo.cliente c
+        JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = @cod_cliente;
         SET @cod_pedido = SCOPE_IDENTITY();
 
         INSERT INTO dbo.detalle_pedido (item, precio_unitario_venta, cantidad, alicuota_iva, iva_monto, cod_pedido, cod_producto)
@@ -83,8 +87,12 @@ BEGIN TRY
     BEGIN TRANSACTION;
 
         INSERT INTO dbo.pedido (calle, numero, ciudad, provincia, cod_postal, cod_cliente, cod_metodo_pago, estado)
-        SELECT c.calle, c.numero, c.ciudad, c.provincia, c.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
-        FROM dbo.cliente c WHERE c.cod_cliente = @cod_cliente;
+        SELECT dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
+        FROM dbo.cliente c
+        JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = @cod_cliente;
         SET @cod_pedido = SCOPE_IDENTITY();
 
         -- >>> ERROR PROVOCADO INTENCIONALMENTE (también serviría: SELECT 1 / 0;)
@@ -129,8 +137,12 @@ BEGIN TRY
     BEGIN TRANSACTION;
 
         INSERT INTO dbo.pedido (calle, numero, ciudad, provincia, cod_postal, cod_cliente, cod_metodo_pago, estado)
-        SELECT c.calle, c.numero, c.ciudad, c.provincia, c.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
-        FROM dbo.cliente c WHERE c.cod_cliente = @cod_cliente;
+        SELECT dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
+        FROM dbo.cliente c
+        JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = @cod_cliente;
         SET @cod_pedido = SCOPE_IDENTITY();
 
         INSERT INTO dbo.detalle_pedido (item, precio_unitario_venta, cantidad, alicuota_iva, iva_monto, cod_pedido, cod_producto)
@@ -172,8 +184,12 @@ SELECT 'PRUEBA D - ANTES' AS momento,
 
 BEGIN TRY
     INSERT INTO dbo.pedido (calle, numero, ciudad, provincia, cod_postal, cod_cliente, cod_metodo_pago, estado)
-    SELECT c.calle, c.numero, c.ciudad, c.provincia, c.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
-    FROM dbo.cliente c WHERE c.cod_cliente = @cod_cliente;
+    SELECT dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal, c.cod_cliente, @cod_metodo_pago, 'confirmado'
+    FROM dbo.cliente c
+    JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+    JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+    JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+    WHERE c.cod_cliente = @cod_cliente;
     SET @cod_pedido = SCOPE_IDENTITY();
 
     THROW 50299, 'Error provocado intencionalmente después del INSERT.', 1;

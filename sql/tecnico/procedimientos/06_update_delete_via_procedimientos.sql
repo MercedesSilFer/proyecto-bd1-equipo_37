@@ -75,7 +75,7 @@ BEGIN CATCH
 END CATCH;
 
 BEGIN TRY   -- categoría inexistente
-    EXEC dbo.usp_producto_insertar @nombre = 'LOTE-P error', @precio_lista = 100,
+    EXEC dbo.usp_producto_insertar @nombre = 'LOTE-P error', @descripcion = 'Prueba de error', @precio_lista = 100,
          @cod_alicuota = 5, @stock = 1, @cod_categoria = 999999, @cod_producto = @id OUTPUT;
 END TRY
 BEGIN CATCH
@@ -83,7 +83,7 @@ BEGIN CATCH
 END CATCH;
 
 BEGIN TRY   -- precio negativo: lo frena la restricción CHECK de la tabla
-    EXEC dbo.usp_producto_insertar @nombre = 'LOTE-P error', @precio_lista = -50,
+    EXEC dbo.usp_producto_insertar @nombre = 'LOTE-P error', @descripcion = 'Prueba de error', @precio_lista = -50,
          @cod_alicuota = 5, @stock = 1, @cod_categoria = 1, @cod_producto = @id OUTPUT;
 END TRY
 BEGIN CATCH

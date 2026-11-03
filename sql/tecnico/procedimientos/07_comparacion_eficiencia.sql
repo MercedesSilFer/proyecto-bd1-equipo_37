@@ -27,8 +27,8 @@ SET @t0 = SYSDATETIME();
 WHILE @i <= @n
 BEGIN
     SET @nom = CONCAT('BENCH-A ', @i);
-    INSERT INTO dbo.producto (nombre, precio_lista, cod_alicuota, stock, cod_categoria)
-    VALUES (@nom, 100.00, @alic, 1, @cat);
+    INSERT INTO dbo.producto (nombre, descripcion, precio_lista, cod_alicuota, stock, cod_categoria)
+    VALUES (@nom, 'Prueba de eficiencia', 100.00, @alic, 1, @cat);
     SET @i += 1;
 END;
 INSERT INTO @res VALUES ('A) INSERT directo en bucle', @n, DATEDIFF(MILLISECOND, @t0, SYSDATETIME()));
@@ -39,7 +39,7 @@ SET @t0 = SYSDATETIME();
 WHILE @i <= @n
 BEGIN
     SET @nom = CONCAT('BENCH-B ', @i);
-    EXEC dbo.usp_producto_insertar @nombre = @nom, @precio_lista = 100.00,
+    EXEC dbo.usp_producto_insertar @nombre = @nom, @descripcion = 'Prueba de eficiencia', @precio_lista = 100.00,
          @cod_alicuota = @alic, @stock = 1, @cod_categoria = @cat, @cod_producto = @id OUTPUT;
     SET @i += 1;
 END;
@@ -47,8 +47,8 @@ INSERT INTO @res VALUES ('B) EXEC usp_producto_insertar en bucle', @n, DATEDIFF(
 
 -- C) un único INSERT ... SELECT (operación por conjuntos) ---------------
 SET @t0 = SYSDATETIME();
-INSERT INTO dbo.producto (nombre, precio_lista, cod_alicuota, stock, cod_categoria)
-SELECT CONCAT('BENCH-C ', x.i), 100.00, @alic, 1, @cat
+INSERT INTO dbo.producto (nombre, descripcion, precio_lista, cod_alicuota, stock, cod_categoria)
+SELECT CONCAT('BENCH-C ', x.i), 'Prueba de eficiencia', 100.00, @alic, 1, @cat
 FROM (SELECT TOP (@n) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS i
       FROM sys.all_objects a CROSS JOIN sys.all_objects b) AS x;
 INSERT INTO @res VALUES ('C) INSERT ... SELECT (un solo comando)', @n, DATEDIFF(MILLISECOND, @t0, SYSDATETIME()));

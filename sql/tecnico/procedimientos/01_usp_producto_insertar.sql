@@ -7,7 +7,7 @@
 
 -- El procedimiento valida los datos ANTES de insertar y devuelve el
 -- código generado en un parámetro de salida. Los errores se informan con
--- THROW (números 50101-50103). Las restricciones CHECK de la tabla
+-- THROW (números 50101-50104). Las restricciones CHECK de la tabla
 -- (precio > 0, stock >= 0) siguen actuando como última barrera.
 
 USE smarthome_store;
@@ -15,7 +15,7 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.usp_producto_insertar
     @nombre        VARCHAR(50),
-    @descripcion   VARCHAR(1000) = NULL,
+    @descripcion   VARCHAR(1000),
     @precio_lista  DECIMAL(10, 2),
     @cod_alicuota  INT,
     @stock         INT,
@@ -28,6 +28,9 @@ BEGIN
     BEGIN TRY
         IF @nombre IS NULL OR LTRIM(RTRIM(@nombre)) = ''
             THROW 50101, 'El nombre del producto es obligatorio.', 1;
+
+        IF @descripcion IS NULL OR LTRIM(RTRIM(@descripcion)) = ''
+            THROW 50104, 'La descripción del producto es obligatoria.', 1;
 
         IF NOT EXISTS (SELECT 1 FROM dbo.categoria
                        WHERE cod_categoria = @cod_categoria AND activo = 1)
