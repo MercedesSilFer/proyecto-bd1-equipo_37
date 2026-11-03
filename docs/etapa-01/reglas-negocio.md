@@ -1,12 +1,12 @@
 # Reglas de Negocio
 
-**RN.01:** Cada cliente debe registrarse para poder comprar en la tienda online, con nombre, contraseña, dirección, ciudad, provincia, código postal y email. A cada cliente se le asigna un identificador único y el email debe ser único por cada cliente.
+**RN.01:** Cada cliente debe registrarse para poder comprar en la tienda online, con nombre, apellido, contraseña, teléfono, email y al menos una dirección. A cada cliente se le asigna un identificador único y el email debe ser único por cada cliente.
 
 **RN.02:** Cada cliente puede realizar ninguno, uno o muchos pedidos, pero cada pedido pertenece a un único cliente.
 
 **RN.03:** El precio unitario del producto se registra en el detalle del pedido al momento de confirmarse la venta y no puede modificarse con posterioridad, independientemente de cambios posteriores en el precio de lista del producto.
 
-**RN.04:** Cada cliente tiene una sola dirección registrada; al momento de generar un pedido, el sistema debe proponer esa dirección y el cliente puede confirmarla o modificarla para ese pedido puntual. La dirección efectivamente usada queda registrada en el propio pedido (no se actualiza retroactivamente si el cliente cambia su dirección general después).
+**RN.04:** Cada cliente tiene una o más direcciones registradas, y una de ellas es la principal; al momento de generar un pedido, el sistema debe proponer la principal y el cliente puede confirmarla, elegir otra de las registradas o modificarla para ese pedido puntual. La dirección efectivamente usada queda registrada en el propio pedido (no se actualiza retroactivamente si el cliente cambia su dirección general después).
 
 **RN.05:** Un pedido se registra con un código identificador único y se abona con un único método de pago válido previamente registrado (no se admiten pagos parciales ni combinados); el pago queda en estado "pendiente", "aprobado" o "rechazado" según la confirmación de la pasarela de pago.
 
@@ -24,7 +24,7 @@
 
 **RN.12:** Cada operación interna del sistema se realiza a través de un usuario con credenciales únicas y rol asignado previamente: depósito, administrador o soporte. No existe el rol vendedor (en e-commerce el pedido lo genera el cliente directamente, sin intervención de un vendedor).
 
-**RN.13:** El rol depósito gestiona las compras a proveedores y confirma el despacho de pedidos (lo que dispara la salida de stock); el rol administrador gestiona el catálogo (productos, categorías, proveedores, precios, alícuotas de IVA, promociones, slides, multimedia y especificaciones), la administración de usuarios (creación de cuentas), y tiene acceso de solo lectura a la auditoría; el rol soporte puede consultar el estado de pedidos y envíos, sin permisos sobre catálogo ni compras.
+**RN.13:** El rol depósito gestiona las compras a proveedores y confirma el despacho de pedidos; el rol administrador gestiona el catálogo (productos, categorías, proveedores, precios, alícuotas de IVA, promociones, slides, multimedia y especificaciones), la administración de usuarios (creación de cuentas), emite las facturas y tiene acceso de solo lectura a la auditoría; el rol soporte puede consultar el estado de pedidos y envíos, sin permisos sobre catálogo ni compras.
 
 **RN.14:** Los cambios sobre datos sensibles (precios, stock, pedidos, compras, facturación) quedan registrados en la auditoría, identificando el usuario responsable, la operación realizada y la fecha.
 
@@ -44,7 +44,7 @@
 
 **RN.22:** Al confirmar el despacho de un pedido, el sistema registra qué usuario del rol depósito realizó esa gestión.
 
-**RN.23:** Una promoción se registra con nombre, descripción, fecha de inicio y fecha de fin (la fecha de fin no puede ser anterior a la de inicio). Puede ofrecer un porcentaje de descuento (mayor a 0 y hasta 75), cuotas sin interés (entre 2 y 36), o ambos, pero al menos uno de los dos beneficios.
+**RN.23:** Una promoción se registra con nombre, descripción, fecha de inicio y fecha de fin (la fecha de fin no puede ser anterior a la de inicio). Puede ofrecer un porcentaje de descuento (mayor a 0 y hasta 75), cuotas sin interés (entre 2 y 36), o ambos, pero al menos uno de los dos beneficios. Si no ofrece descuento, el porcentaje queda en 0; si no ofrece cuotas sin interés, la cantidad de cuotas queda en 1.
 
 **RN.24:** Una promoción puede aplicarse a uno o varios productos, y un producto puede participar en varias promociones a lo largo del tiempo. Si un producto tiene más de una promoción vigente a la vez, se aplica la de mayor descuento. El precio final con descuento queda congelado en el detalle del pedido al confirmarse la venta (complementa RN.03 y RN.19).
 
@@ -55,3 +55,5 @@
 **RN.27:** Las especificaciones técnicas forman un catálogo con nombre único. Cada producto puede tener varias especificaciones, y cada una registra un valor propio para ese producto (por ejemplo, especificación "Tamaño de pantalla", valor "50 pulgadas").
 
 **RN.28:** Las alícuotas de IVA se registran en un catálogo único y cada producto tiene asignada una alícuota de ese catálogo. Por el rubro de la tienda, los productos solo utilizan la alícuota general (21 %) o la reducida (10,5 %). Al confirmarse una venta, el porcentaje vigente se copia en el detalle del pedido y no se modifica aunque el catálogo cambie después (complementa RN.19).
+
+**RN.29:** Las provincias y localidades se registran en catálogos únicos: cada localidad pertenece a una única provincia. Cada dirección pertenece a un único cliente o a un único proveedor, y registra calle, número, código postal y localidad. Un proveedor puede no tener direcciones cargadas, y tanto un cliente como un proveedor tienen como máximo una dirección principal. Puede haber localidades con el mismo nombre en provincias distintas. La dirección usada en un pedido se copia como texto en el propio pedido y no cambia si después se modifica el catálogo (complementa RN.04).
