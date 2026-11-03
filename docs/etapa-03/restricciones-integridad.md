@@ -17,6 +17,7 @@
 - **CHECK:** exactamente uno de cod_cliente y cod_proveedor tiene valor, porque cada dirección pertenece a un solo titular.
 - **UNIQUE filtrado:** una sola dirección con principal = 1 por cliente y por proveedor.
 - **DEFAULT:** principal = 0.
+- **Trigger:** `trg_direccion_principal` marca la dirección más reciente si un titular con direcciones se queda sin principal.
 
 ### cliente
 - **PRIMARY KEY:** cod_cliente (autogenerada con IDENTITY).

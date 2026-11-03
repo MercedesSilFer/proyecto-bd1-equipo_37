@@ -60,6 +60,9 @@ Este documento reúne casos de prueba diseñados para verificar que las restricc
 | 43 | Insertar una "direccion" sin cliente ni proveedor, o con los dos | Falla el INSERT | CK_direccion_titular |
 | 44 | Insertar una segunda "direccion" principal para el mismo cliente | Falla el INSERT | UQ_direccion_principal_cliente |
 | 45 | Insertar una segunda "direccion" no principal para el mismo cliente | Se inserta correctamente | Un cliente puede tener varias direcciones |
+| 49 | Insertar la primera "direccion" de un cliente sin indicar principal | Queda como principal | trg_direccion_principal |
+| 50 | Eliminar la "direccion" principal de un cliente con otra dirección | La más reciente pasa a ser la principal | trg_direccion_principal |
+| 51 | Eliminar la única "direccion" de un cliente | Se elimina, y el cliente queda sin direcciones | Un cliente puede no tener direcciones |
 | 36 | Insertar una "localidad" con cod_provincia inexistente | Falla el INSERT | FK_localidad_provincia |
 
 ## 5. Reglas de borrado (ON DELETE)
@@ -77,7 +80,7 @@ Este documento reúne casos de prueba diseñados para verificar que las restricc
 
 ## Resultados
 
-Los 48 casos se ejecutaron el 03/11/2026 sobre una base recién creada con `crear_bd.sql` y `cargar_datos.sql`. Todos dieron el resultado esperado, y en los casos que deben fallar actuó la restricción indicada.
+Los 51 casos se ejecutaron el 03/11/2026 sobre una base recién creada con `crear_bd.sql` y `cargar_datos.sql`. Todos dieron el resultado esperado, y en los casos que deben fallar actuó la restricción indicada.
 
 ## Observación general
 

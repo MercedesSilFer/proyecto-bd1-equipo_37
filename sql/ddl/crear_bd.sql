@@ -120,6 +120,35 @@ CREATE UNIQUE INDEX UQ_direccion_principal_cliente ON direccion(cod_cliente) WHE
 GO
 CREATE UNIQUE INDEX UQ_direccion_principal_proveedor ON direccion(cod_proveedor) WHERE principal = 1 AND cod_proveedor IS NOT NULL;
 GO
+-- Si un titular con direcciones se queda sin principal, se marca la más reciente (RN.04)
+CREATE TRIGGER trg_direccion_principal
+ON direccion
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+  IF @@ROWCOUNT = 0 RETURN;
+  SET NOCOUNT ON;
+
+  WITH titulares AS
+  (
+    SELECT cod_cliente, cod_proveedor FROM inserted
+    UNION
+    SELECT cod_cliente, cod_proveedor FROM deleted
+  ),
+  sin_principal AS
+  (
+    SELECT MAX(x.cod_direccion) AS cod_direccion
+    FROM direccion x
+    INNER JOIN titulares t ON x.cod_cliente = t.cod_cliente OR x.cod_proveedor = t.cod_proveedor
+    GROUP BY x.cod_cliente, x.cod_proveedor
+    HAVING MAX(CAST(x.principal AS INT)) = 0
+  )
+  UPDATE x
+  SET x.principal = 1
+  FROM direccion x
+  INNER JOIN sin_principal s ON s.cod_direccion = x.cod_direccion;
+END;
+GO
 CREATE TABLE metodo_pago
 (
   cod_metodo_pago INT IDENTITY CONSTRAINT PK_metodo_pago PRIMARY KEY,

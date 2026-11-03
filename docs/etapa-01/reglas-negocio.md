@@ -1,12 +1,12 @@
 # Reglas de Negocio
 
-**RN.01:** Cada cliente debe registrarse para poder comprar en la tienda online, con nombre, apellido, contraseña, teléfono, email y al menos una dirección. A cada cliente se le asigna un identificador único y el email debe ser único por cada cliente.
+**RN.01:** Cada cliente debe registrarse para poder comprar en la tienda online, con nombre, apellido, contraseña, teléfono y email, y necesita al menos una dirección registrada para generar un pedido. A cada cliente se le asigna un identificador único y el email debe ser único por cada cliente.
 
 **RN.02:** Cada cliente puede realizar ninguno, uno o muchos pedidos, pero cada pedido pertenece a un único cliente.
 
 **RN.03:** El precio unitario del producto se registra en el detalle del pedido al momento de confirmarse la venta y no puede modificarse con posterioridad, independientemente de cambios posteriores en el precio de lista del producto.
 
-**RN.04:** Cada cliente tiene una o más direcciones registradas, y una de ellas es la principal; al momento de generar un pedido, el sistema debe proponer la principal y el cliente puede confirmarla, elegir otra de las registradas o modificarla para ese pedido puntual. La dirección efectivamente usada queda registrada en el propio pedido (no se actualiza retroactivamente si el cliente cambia su dirección general después).
+**RN.04:** Cada cliente puede tener una o más direcciones registradas, y una de ellas es la principal: la primera que registra queda como principal, y después puede elegir otra. Si se elimina la principal, pasa a serlo la más reciente. Al momento de generar un pedido, el sistema debe proponer la principal y el cliente puede confirmarla, elegir otra de las registradas o modificarla para ese pedido puntual. La dirección efectivamente usada queda registrada en el propio pedido (no se actualiza retroactivamente si el cliente cambia su dirección general después).
 
 **RN.05:** Un pedido se registra con un código identificador único y se abona con un único método de pago válido previamente registrado (no se admiten pagos parciales ni combinados); el pago queda en estado "pendiente", "aprobado" o "rechazado" según la confirmación de la pasarela de pago.
 
@@ -56,6 +56,6 @@
 
 **RN.28:** Las alícuotas de IVA se registran en un catálogo único y cada producto tiene asignada una alícuota de ese catálogo. Por el rubro de la tienda, los productos solo utilizan la alícuota general (21 %) o la reducida (10,5 %). Al confirmarse una venta, el porcentaje vigente se copia en el detalle del pedido y no se modifica aunque el catálogo cambie después (complementa RN.19).
 
-**RN.29:** Las provincias y localidades se registran en catálogos únicos: cada localidad pertenece a una única provincia. Cada dirección pertenece a un único cliente o a un único proveedor, y registra calle, número, código postal y localidad. Un proveedor puede no tener direcciones cargadas, y tanto un cliente como un proveedor tienen como máximo una dirección principal. Puede haber localidades con el mismo nombre en provincias distintas. La dirección usada en un pedido se copia como texto en el propio pedido y no cambia si después se modifica el catálogo (complementa RN.04).
+**RN.29:** Las provincias y localidades se registran en catálogos únicos: cada localidad pertenece a una única provincia. Cada dirección pertenece a un único cliente o a un único proveedor, y registra calle, número, código postal y localidad. Un cliente o un proveedor puede no tener direcciones cargadas, y quien tenga alguna tiene exactamente una principal. Puede haber localidades con el mismo nombre en provincias distintas. La dirección usada en un pedido se copia como texto en el propio pedido y no cambia si después se modifica el catálogo (complementa RN.04).
 
 **RN.30:** Un pedido puede cancelarse mientras no esté facturado ni despachado. Si estaba confirmado, sus unidades vuelven al stock en la misma operación; si estaba pendiente, el stock no cambia porque todavía no se había descontado. El reintegro del pago corresponde a la pasarela y queda fuera del sistema.

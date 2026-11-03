@@ -303,7 +303,7 @@ erDiagram
     %% Ubicacion: de izquierda a derecha
     PROVINCIA ||--o{ LOCALIDAD : contiene
     LOCALIDAD ||--o{ DIRECCION : ubica
-    DIRECCION }|--|| CLIENTE : "es de"
+    DIRECCION }o--|| CLIENTE : "es de"
     DIRECCION }o--|| PROVEEDOR : "es de"
 
     %% Ventas
