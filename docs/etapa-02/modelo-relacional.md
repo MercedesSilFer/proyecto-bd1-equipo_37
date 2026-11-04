@@ -193,6 +193,7 @@ A continuación el detalle en tablas del mapeo de cada una de las entidades fuer
 | valor_anterior | VARCHAR | |
 | valor_nuevo | VARCHAR | |
 | cod_usuario | INT | FK → usuario |
+| usuario_bd | VARCHAR | Por defecto el usuario de la sesión |
 
 ### alicuota_iva
 | Columna | Tipo Dato | Restricción |
@@ -483,6 +484,7 @@ erDiagram
         VARCHAR valor_anterior "O"
         VARCHAR valor_nuevo "O"
         INT cod_usuario FK
+        VARCHAR usuario_bd
     }
 
     ALICUOTA_IVA {

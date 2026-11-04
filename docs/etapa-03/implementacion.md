@@ -230,6 +230,7 @@ CREATE TABLE auditoria
   valor_anterior VARCHAR(255) NULL,
   valor_nuevo VARCHAR(255) NULL,
   cod_usuario INT NOT NULL,
+  usuario_bd VARCHAR(128) NOT NULL CONSTRAINT DF_auditoria_usuario_bd DEFAULT SUSER_SNAME(),
   CONSTRAINT FK_auditoria_usuario FOREIGN KEY (cod_usuario) REFERENCES usuario(cod_usuario) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT CK_auditoria_operacion CHECK (operacion IN ('INSERT', 'UPDATE', 'DELETE'))
 );

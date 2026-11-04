@@ -88,7 +88,7 @@ El modelo tiene las tablas que una tienda online necesita para funcionar dentro 
 | Compras (3) | `compra`, `detalle_compra`, `proveedor` | El costo de cada compra y el vínculo entre proveedor y producto (RN.07, RN.08, RN.20) | Se perdería el historial de costos, y no se podría calcular el margen ni registrar un proveedor sin compras |
 | Administración (2) | `usuario`, `auditoria` | Quién hizo cada operación y qué cambió en los datos sensibles (RN.12 a RN.14) | No se podrían controlar los roles ni reconstruir un cambio de precio o de stock |
 
-La cantidad de tablas no agrega datos: los ordena para que cada uno se guarde en un solo lugar, salvo las copias históricas que se conservan a propósito (decisiones 7, 9 y 12). Las 51 pruebas de validación de la Etapa III confirman que las restricciones funcionan como se definieron.
+La cantidad de tablas no agrega datos: los ordena para que cada uno se guarde en un solo lugar, salvo las copias históricas que se conservan a propósito (decisiones 7, 9 y 12). Las 52 pruebas de validación de la Etapa III confirman que las restricciones funcionan como se definieron.
 
 El modelo no cubre todo lo que puede necesitar un comercio. Carrito de compras, devoluciones, pasarela de pago, logística, venta en local y varios depósitos quedan fuera del alcance, y se podrían agregar sobre estas tablas sin reemplazarlas.
 

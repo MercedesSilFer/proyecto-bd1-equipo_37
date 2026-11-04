@@ -45,6 +45,7 @@ Este documento reúne casos de prueba diseñados para verificar que las restricc
 | 23 | Insertar un "cliente" sin "telefono" | Falla el INSERT | Columna "telefono NOT NULL" |
 | 47 | Insertar un "producto" sin "descripcion" | Falla el INSERT | Columna "descripcion NOT NULL" |
 | 48 | Insertar una "compra" sin "nro_comprobante_prov" | Se inserta con el valor 'S/N' | DF_compra_nro_comprobante_prov |
+| 52 | Insertar una fila en "auditoria" sin "usuario_bd" | Se inserta con el usuario de la sesión | DF_auditoria_usuario_bd |
 | 24 | Insertar un "pedido" sin "cod_usuario" | Se inserta correctamente ("cod_usuario" es NULL hasta la gestión de despacho) | Columna cod_usuario NULL |
 
 ## 4. Reglas de integridad referencial (FOREIGN KEY)
@@ -80,7 +81,7 @@ Este documento reúne casos de prueba diseñados para verificar que las restricc
 
 ## Resultados
 
-Los 51 casos se ejecutaron el 03/11/2026 sobre una base recién creada con `crear_bd.sql` y `cargar_datos.sql`. Todos dieron el resultado esperado, y en los casos que deben fallar actuó la restricción indicada.
+Los 52 casos se ejecutaron el 03/11/2026 sobre una base recién creada con `crear_bd.sql` y `cargar_datos.sql`. Todos dieron el resultado esperado, y en los casos que deben fallar actuó la restricción indicada.
 
 ## Observación general
 

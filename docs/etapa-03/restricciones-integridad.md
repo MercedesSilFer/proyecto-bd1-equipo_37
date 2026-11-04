@@ -92,7 +92,7 @@
 - **PRIMARY KEY:** cod_auditoria.
 - **FOREIGN KEY:** cod_usuario → usuario.
 - **CHECK:** operacion IN ('INSERT', 'UPDATE', 'DELETE').
-- **DEFAULT:** fecha = GETDATE().
+- **DEFAULT:** fecha = GETDATE(), usuario_bd = SUSER_SNAME().
 
 ### factura
 - **PRIMARY KEY:** cod_factura.
