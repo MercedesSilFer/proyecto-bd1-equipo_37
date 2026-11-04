@@ -418,3 +418,555 @@ END CATCH;
 SELECT cod_producto, stock FROM producto WHERE cod_producto = 2;
 SELECT COUNT(*) AS pedidos, (SELECT COUNT(*) FROM detalle_pedido) AS detalles FROM pedido;
 GO
+
+-- #############################################################
+-- PARTE 2: COMPLEMENTO - TRANSACCION EXPLICITA, ANIDAMIENTO Y COMPRAS
+-- (se agrega a T1-T6; no los reemplaza)
+-- #############################################################
+-- Objetos y pruebas:
+--   T7  a T10   transaccion explicita (sin procedimiento) sobre pedido,
+--               detalle_pedido y producto; T10 es el contraste SIN transaccion
+--   T11 a T13   transacciones anidadas y puntos de recuperacion
+--   usp_confirmar_compra   pasa una compra de pendiente a recibida y suma
+--                          el stock (RN.20, RN.09)
+--   T14 a T16   pruebas de usp_confirmar_compra
+--
+-- Codigos de error propios: 50211 (T7-T9), 50221 (usp_confirmar_compra) y
+-- 50299 (error provocado a proposito en T8 y T10). No se superponen con los
+-- 50001-50011 ni con los 50101-50121 de los otros scripts.
+-- Las pruebas que modifican datos (T7, T10) los eliminan al final; el resto
+-- termina en ROLLBACK. Si una prueba se interrumpe a mitad de camino, se
+-- puede usar 99_limpieza_demo.sql.
+
+USE smarthome_store;
+GO
+
+-- =============================================================
+-- T7. Transaccion explicita exitosa (sin procedimiento)
+-- Caso: una transaccion que inserta un registro en una
+-- tabla (pedido), otro en una segunda tabla (detalle_pedido) y actualiza
+-- registros de una tercera (producto). Los datos solo se confirman si TODA
+-- la operacion termina bien. Despues se limpia el pedido de prueba (en otra
+-- transaccion) para no alterar los datos de las etapas anteriores.
+-- Esperado: pedidos 12 -> 13, lineas 18 -> 19, stock del producto 2: 40 -> 39;
+--           tras la limpieza vuelve a 12, 18 y 40.
+-- =============================================================
+
+SET NOCOUNT ON;
+DECLARE @cod_cliente INT = 1, @cod_metodo_pago INT = 1, @cod_producto INT = 2, @cantidad INT = 1;
+DECLARE @cod_pedido INT, @precio DECIMAL(10, 2), @alicuota DECIMAL(4, 2);
+
+-- Precio final (IVA y descuento vigente, RN.19 y RN.24) y alicuota del producto
+SELECT @precio = dbo.fn_precio_final(p.cod_producto, GETDATE()), @alicuota = a.porcentaje
+FROM dbo.producto p
+INNER JOIN dbo.alicuota_iva a ON a.cod_alicuota = p.cod_alicuota
+WHERE p.cod_producto = @cod_producto;
+
+SELECT 'T7 - ANTES' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+        INSERT INTO dbo.pedido
+            (estado, estado_pago, ref_transaccion,
+             calle, numero, ciudad, provincia, cod_postal,
+             cod_cliente, cod_metodo_pago)
+        SELECT 'confirmado', 'aprobado', 'TX-T7-COMMIT',
+               dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal,
+               c.cod_cliente, @cod_metodo_pago
+        FROM dbo.cliente c
+        INNER JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        INNER JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        INNER JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = @cod_cliente;
+        SET @cod_pedido = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.detalle_pedido
+            (cod_pedido, cod_producto, item, cantidad,
+             precio_unitario_venta, alicuota_iva, iva_monto)
+        VALUES (@cod_pedido, @cod_producto, 1, @cantidad, @precio, @alicuota,
+                ROUND(@cantidad * @precio * @alicuota / (100 + @alicuota), 2));
+
+        -- La condicion "stock >= cantidad" evita stock negativo (RN.11)
+        UPDATE dbo.producto SET stock = stock - @cantidad
+        WHERE cod_producto = @cod_producto AND stock >= @cantidad;
+        IF @@ROWCOUNT = 0
+            THROW 50211, 'Stock insuficiente: se revierte toda la operacion.', 1;
+
+    COMMIT TRANSACTION;
+    PRINT 'T7: COMMIT. Pedido ' + CAST(@cod_pedido AS VARCHAR(10)) + ' registrado.';
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    PRINT 'T7: ROLLBACK. Motivo: ' + ERROR_MESSAGE();
+END CATCH;
+
+SELECT 'T7 - DESPUES DEL COMMIT' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+
+-- Limpieza: se elimina el pedido (el detalle cae por CASCADE) y se repone el stock
+IF EXISTS (SELECT 1 FROM dbo.pedido WHERE cod_pedido = @cod_pedido)
+BEGIN
+    BEGIN TRANSACTION;
+        DELETE FROM dbo.pedido WHERE cod_pedido = @cod_pedido;
+        UPDATE dbo.producto SET stock = stock + @cantidad WHERE cod_producto = @cod_producto;
+    COMMIT TRANSACTION;
+END;
+
+SELECT 'T7 - TRAS LA LIMPIEZA' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+GO
+
+-- =============================================================
+-- T8. Error provocado despues del primer INSERT -> ROLLBACK
+-- Se inserta el pedido y despues se lanza un error a proposito. El CATCH
+-- revierte todo: no queda ni el pedido ni cambios de stock.
+-- Esperado: error 50299; pedidos 12, lineas 18 y stock 40, antes y despues.
+-- =============================================================
+
+SET NOCOUNT ON;
+DECLARE @cod_cliente INT = 1, @cod_metodo_pago INT = 1, @cod_producto INT = 2, @cantidad INT = 1;
+DECLARE @cod_pedido INT, @precio DECIMAL(10, 2), @alicuota DECIMAL(4, 2);
+
+-- Precio final (IVA y descuento vigente, RN.19 y RN.24) y alicuota del producto
+SELECT @precio = dbo.fn_precio_final(p.cod_producto, GETDATE()), @alicuota = a.porcentaje
+FROM dbo.producto p
+INNER JOIN dbo.alicuota_iva a ON a.cod_alicuota = p.cod_alicuota
+WHERE p.cod_producto = @cod_producto;
+
+SELECT 'T8 - ANTES' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+        INSERT INTO dbo.pedido
+            (estado, estado_pago, ref_transaccion,
+             calle, numero, ciudad, provincia, cod_postal,
+             cod_cliente, cod_metodo_pago)
+        SELECT 'confirmado', 'aprobado', 'TX-T8-ERROR',
+               dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal,
+               c.cod_cliente, @cod_metodo_pago
+        FROM dbo.cliente c
+        INNER JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        INNER JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        INNER JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = @cod_cliente;
+        SET @cod_pedido = SCOPE_IDENTITY();
+
+        -- >>> ERROR PROVOCADO INTENCIONALMENTE (tambien serviria: SELECT 1 / 0;)
+        THROW 50299, 'Error provocado intencionalmente despues del INSERT.', 1;
+
+        -- Estas sentencias no llegan a ejecutarse
+        INSERT INTO dbo.detalle_pedido
+            (cod_pedido, cod_producto, item, cantidad,
+             precio_unitario_venta, alicuota_iva, iva_monto)
+        VALUES (@cod_pedido, @cod_producto, 1, @cantidad, @precio, @alicuota,
+                ROUND(@cantidad * @precio * @alicuota / (100 + @alicuota), 2));
+
+        UPDATE dbo.producto SET stock = stock - @cantidad WHERE cod_producto = @cod_producto;
+
+    COMMIT TRANSACTION;
+    PRINT 'T8: COMMIT (no deberia llegar aca).';
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    PRINT 'T8: ROLLBACK. Motivo: ' + ERROR_MESSAGE();
+END CATCH;
+
+SELECT 'T8 - DESPUES' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+GO
+
+-- =============================================================
+-- T9. Stock insuficiente (error de negocio) -> ROLLBACK
+-- Se intentan vender 9999 unidades. El pedido y el detalle se insertan,
+-- pero el UPDATE de stock no encuentra filas y lanza el error 50211: el
+-- CATCH revierte los dos INSERT.
+-- Esperado: error 50211; pedidos 12, lineas 18 y stock 40, antes y despues.
+-- =============================================================
+
+SET NOCOUNT ON;
+DECLARE @cod_cliente INT = 1, @cod_metodo_pago INT = 1, @cod_producto INT = 2, @cantidad INT = 9999;
+DECLARE @cod_pedido INT, @precio DECIMAL(10, 2), @alicuota DECIMAL(4, 2);
+
+-- Precio final (IVA y descuento vigente, RN.19 y RN.24) y alicuota del producto
+SELECT @precio = dbo.fn_precio_final(p.cod_producto, GETDATE()), @alicuota = a.porcentaje
+FROM dbo.producto p
+INNER JOIN dbo.alicuota_iva a ON a.cod_alicuota = p.cod_alicuota
+WHERE p.cod_producto = @cod_producto;
+
+SELECT 'T9 - ANTES' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+        INSERT INTO dbo.pedido
+            (estado, estado_pago, ref_transaccion,
+             calle, numero, ciudad, provincia, cod_postal,
+             cod_cliente, cod_metodo_pago)
+        SELECT 'confirmado', 'aprobado', 'TX-T9-STOCK',
+               dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal,
+               c.cod_cliente, @cod_metodo_pago
+        FROM dbo.cliente c
+        INNER JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+        INNER JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+        INNER JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+        WHERE c.cod_cliente = @cod_cliente;
+        SET @cod_pedido = SCOPE_IDENTITY();
+
+        INSERT INTO dbo.detalle_pedido
+            (cod_pedido, cod_producto, item, cantidad,
+             precio_unitario_venta, alicuota_iva, iva_monto)
+        VALUES (@cod_pedido, @cod_producto, 1, @cantidad, @precio, @alicuota,
+                ROUND(@cantidad * @precio * @alicuota / (100 + @alicuota), 2));
+
+        UPDATE dbo.producto SET stock = stock - @cantidad
+        WHERE cod_producto = @cod_producto AND stock >= @cantidad;
+        IF @@ROWCOUNT = 0
+            THROW 50211, 'Stock insuficiente: se revierte toda la operacion.', 1;
+
+    COMMIT TRANSACTION;
+    PRINT 'T9: COMMIT (no deberia llegar aca).';
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    PRINT 'T9: ROLLBACK. Motivo: ' + ERROR_MESSAGE();
+END CATCH;
+
+SELECT 'T9 - DESPUES' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+GO
+
+-- =============================================================
+-- T10. Contraste: el MISMO error SIN transaccion
+-- Sin BEGIN TRANSACTION cada INSERT se confirma por separado: al fallar el
+-- paso siguiente queda un pedido SIN detalle (datos inconsistentes). Al final
+-- se elimina ese pedido de prueba.
+-- Esperado: pedidos 12 -> 13 (pedido huerfano), lineas 18, stock 40; tras la
+--           limpieza vuelve a 12 pedidos.
+-- =============================================================
+
+SET NOCOUNT ON;
+DECLARE @cod_cliente INT = 1, @cod_metodo_pago INT = 1, @cod_producto INT = 2, @cantidad INT = 1;
+DECLARE @cod_pedido INT, @precio DECIMAL(10, 2), @alicuota DECIMAL(4, 2);
+
+-- Precio final (IVA y descuento vigente, RN.19 y RN.24) y alicuota del producto
+SELECT @precio = dbo.fn_precio_final(p.cod_producto, GETDATE()), @alicuota = a.porcentaje
+FROM dbo.producto p
+INNER JOIN dbo.alicuota_iva a ON a.cod_alicuota = p.cod_alicuota
+WHERE p.cod_producto = @cod_producto;
+
+SELECT 'T10 - ANTES' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+
+SET XACT_ABORT OFF;
+BEGIN TRY
+    INSERT INTO dbo.pedido
+        (estado, estado_pago, ref_transaccion,
+         calle, numero, ciudad, provincia, cod_postal,
+         cod_cliente, cod_metodo_pago)
+    SELECT 'confirmado', 'aprobado', 'TX-T10-SIN-TRAN',
+           dir.calle, dir.numero, loc.nombre, prov.nombre, dir.cod_postal,
+           c.cod_cliente, @cod_metodo_pago
+    FROM dbo.cliente c
+    INNER JOIN dbo.direccion dir ON dir.cod_cliente = c.cod_cliente AND dir.principal = 1
+    INNER JOIN dbo.localidad loc ON loc.cod_localidad = dir.cod_localidad
+    INNER JOIN dbo.provincia prov ON prov.cod_provincia = loc.cod_provincia
+    WHERE c.cod_cliente = @cod_cliente;
+    SET @cod_pedido = SCOPE_IDENTITY();
+
+    THROW 50299, 'Error provocado intencionalmente despues del INSERT.', 1;
+END TRY
+BEGIN CATCH
+    PRINT 'T10: error SIN transaccion. Motivo: ' + ERROR_MESSAGE();
+END CATCH;
+
+SELECT 'T10 - DESPUES (pedido huerfano)' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+
+-- Limpieza del pedido huerfano
+DELETE FROM dbo.pedido WHERE cod_pedido = @cod_pedido;
+
+SELECT 'T10 - TRAS LA LIMPIEZA' AS momento,
+       (SELECT COUNT(*) FROM dbo.pedido) AS pedidos,
+       (SELECT COUNT(*) FROM dbo.detalle_pedido) AS lineas,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = @cod_producto) AS stock_producto;
+GO
+
+-- =============================================================
+-- T11 a T13. Transacciones anidadas y puntos de recuperacion
+-- La clave es el contador @@TRANCOUNT:
+--   T11  el COMMIT de una transaccion interna no confirma nada: solo resta 1.
+--   T12  un ROLLBACK sin nombre deshace TODO y deja el contador en 0,
+--        aunque haya transacciones internas.
+--   T13  SAVE TRANSACTION permite deshacer solo una parte; el resto se
+--        puede confirmar despues.
+-- Usan la tabla categoria con nombres "DEMO-..." que se eliminan al final.
+-- Los resultados de los PRINT se ven en la pestana Mensajes.
+-- =============================================================
+
+SET NOCOUNT ON;
+SET XACT_ABORT OFF;   -- estas demostraciones se hacen con el valor por defecto
+
+-- T11) COMMIT interno + ROLLBACK externo
+-- Esperado: contador 0, 1, 2, 1 y 0; filas DEMO-ANIDADA-1 = 0
+PRINT '--- T11) COMMIT interno + ROLLBACK externo';
+PRINT 'Contador al inicio: ' + CAST(@@TRANCOUNT AS VARCHAR(3));
+BEGIN TRANSACTION externa;
+    PRINT 'Despues de BEGIN externa: ' + CAST(@@TRANCOUNT AS VARCHAR(3));
+    BEGIN TRANSACTION interna;
+        PRINT 'Despues de BEGIN interna: ' + CAST(@@TRANCOUNT AS VARCHAR(3));
+        INSERT INTO dbo.categoria (nombre) VALUES ('DEMO-ANIDADA-1');
+    COMMIT TRANSACTION interna;
+    PRINT 'Despues de COMMIT interna: ' + CAST(@@TRANCOUNT AS VARCHAR(3));   -- todavia no es permanente
+ROLLBACK TRANSACTION externa;
+PRINT 'Despues de ROLLBACK externa: ' + CAST(@@TRANCOUNT AS VARCHAR(3));
+SELECT COUNT(*) AS filas_DEMO_ANIDADA_1_esperado_0
+FROM dbo.categoria WHERE nombre = 'DEMO-ANIDADA-1';
+
+-- T12) ROLLBACK dentro de la transaccion interna: deshace todo
+-- Esperado: contador 0 despues del ROLLBACK interno; filas DEMO-ANIDADA-2 = 0
+PRINT '--- T12) ROLLBACK dentro de la transaccion interna';
+BEGIN TRANSACTION;
+    BEGIN TRANSACTION;
+        INSERT INTO dbo.categoria (nombre) VALUES ('DEMO-ANIDADA-2');
+    ROLLBACK TRANSACTION;   -- deshace TODO, tambien la transaccion externa
+PRINT 'Contador despues del ROLLBACK interno: ' + CAST(@@TRANCOUNT AS VARCHAR(3));
+SELECT COUNT(*) AS filas_DEMO_ANIDADA_2_esperado_0
+FROM dbo.categoria WHERE nombre = 'DEMO-ANIDADA-2';
+
+-- T13) Punto de recuperacion: se deshace una parte y se confirma el resto
+-- Esperado: contador 1 tras el ROLLBACK al punto (la transaccion sigue
+--           abierta); despues del COMMIT queda solo DEMO-SP-A.
+PRINT '--- T13) Punto de recuperacion';
+BEGIN TRANSACTION;
+    INSERT INTO dbo.categoria (nombre) VALUES ('DEMO-SP-A');
+    SAVE TRANSACTION punto_1;
+    INSERT INTO dbo.categoria (nombre) VALUES ('DEMO-SP-B');
+    ROLLBACK TRANSACTION punto_1;   -- solo se deshace DEMO-SP-B
+    PRINT 'Contador despues de ROLLBACK al punto: ' + CAST(@@TRANCOUNT AS VARCHAR(3));
+COMMIT TRANSACTION;
+SELECT nombre, 'esperado: solo DEMO-SP-A' AS nota
+FROM dbo.categoria WHERE nombre IN ('DEMO-SP-A', 'DEMO-SP-B');
+GO
+
+-- Limpieza de las categorias de demostracion
+DELETE FROM dbo.categoria WHERE nombre LIKE 'DEMO-%';
+SELECT COUNT(*) AS categorias_DEMO_restantes_esperado_0 FROM dbo.categoria WHERE nombre LIKE 'DEMO-%';
+GO
+
+-- =============================================================
+-- Procedimiento: confirmar una compra a proveedor
+-- Reglas de negocio vinculadas
+--   RN.20  Toda compra nace "pendiente" y debe confirmarse explicitamente
+--          para que el stock se incremente.
+--   RN.09  El stock sube al confirmarse la compra.
+--
+-- Pasa la compra de 'pendiente' a 'recibida' y suma al stock de cada
+-- producto las unidades de su detalle, todo en una sola transaccion.
+--
+-- Anidamiento: si se la llama SIN transaccion abierta, crea y confirma la
+-- suya; si se la llama DENTRO de otra transaccion, usa un punto de
+-- recuperacion (SAVE TRANSACTION) y, ante un error, deshace solo su parte
+-- y el llamador puede seguir. Por eso usa XACT_ABORT OFF (el valor por
+-- defecto) dentro del procedimiento. Es un enfoque distinto al de
+-- sp_registrar_venta_completa y sp_cancelar_pedido (XACT_ABORT ON, que ante
+-- un error condena toda la transaccion del llamador).
+--
+-- Codigo de error propio:
+--   50221 la compra no existe o no esta en estado pendiente
+-- =============================================================
+CREATE OR ALTER PROCEDURE dbo.usp_confirmar_compra
+    @cod_compra INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT OFF;
+
+    DECLARE @tran_propia BIT = 0;
+
+    BEGIN TRY
+        IF @@TRANCOUNT = 0
+        BEGIN
+            BEGIN TRANSACTION;
+            SET @tran_propia = 1;
+        END
+        ELSE
+            SAVE TRANSACTION sv_confirmar_compra;
+
+        UPDATE dbo.compra
+        SET estado = 'recibida'
+        WHERE cod_compra = @cod_compra AND estado = 'pendiente';
+
+        IF @@ROWCOUNT = 0
+            THROW 50221, 'La compra no existe o no esta en estado pendiente.', 1;
+
+        UPDATE p
+        SET p.stock = p.stock + dc.cantidad
+        FROM dbo.producto p
+        INNER JOIN dbo.detalle_compra dc ON dc.cod_producto = p.cod_producto
+        WHERE dc.cod_compra = @cod_compra;
+
+        IF @tran_propia = 1
+            COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @tran_propia = 1
+        BEGIN
+            IF XACT_STATE() <> 0
+                ROLLBACK TRANSACTION;
+        END
+        ELSE IF XACT_STATE() = 1
+            ROLLBACK TRANSACTION sv_confirmar_compra;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+-- =============================================================
+-- T14. Confirmar una compra pendiente
+-- La compra 9 esta pendiente y trae 5 unidades del producto 1 y 5 del 9. Se
+-- confirma dentro de una transaccion que se revierte al final, para no
+-- alterar los datos de prueba.
+-- Esperado: estado pendiente -> recibida; stock del producto 1: 12 -> 17 y
+--           del producto 9: 15 -> 20; tras el ROLLBACK vuelve a pendiente, 12 y 15.
+-- =============================================================
+
+SET NOCOUNT ON;
+SET XACT_ABORT OFF;
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+        SELECT 'T14 - ANTES' AS momento, c.cod_compra, c.estado,
+               (SELECT stock FROM dbo.producto WHERE cod_producto = 1) AS stock_producto_1,
+               (SELECT stock FROM dbo.producto WHERE cod_producto = 9) AS stock_producto_9
+        FROM dbo.compra c WHERE c.cod_compra = 9;
+
+        EXEC dbo.usp_confirmar_compra @cod_compra = 9;
+
+        SELECT 'T14 - TRAS CONFIRMAR' AS momento, c.cod_compra, c.estado,
+               (SELECT stock FROM dbo.producto WHERE cod_producto = 1) AS stock_producto_1,
+               (SELECT stock FROM dbo.producto WHERE cod_producto = 9) AS stock_producto_9
+        FROM dbo.compra c WHERE c.cod_compra = 9;
+
+    ROLLBACK TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    SELECT ERROR_NUMBER() AS error, ERROR_MESSAGE() AS mensaje;
+END CATCH;
+
+SELECT 'T14 - TRAS ROLLBACK' AS momento, c.cod_compra, c.estado,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = 1) AS stock_producto_1,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = 9) AS stock_producto_9
+FROM dbo.compra c WHERE c.cod_compra = 9;
+GO
+
+-- =============================================================
+-- T15. Confirmar una compra que no se puede confirmar
+-- Sin transaccion del llamador: el procedimiento abre la suya y la revierte.
+-- Esperado: tres errores 50221 (compra ya recibida, cancelada e inexistente),
+--           @@TRANCOUNT = 0 en cada caso y estados sin cambios
+--           (compra 1 recibida, 9 pendiente, 10 cancelada).
+-- =============================================================
+
+BEGIN TRY
+    EXEC dbo.usp_confirmar_compra @cod_compra = 1;      -- ya recibida
+END TRY
+BEGIN CATCH
+    SELECT 'compra ya recibida (1)' AS caso, ERROR_NUMBER() AS error,
+           ERROR_MESSAGE() AS mensaje, @@TRANCOUNT AS tran_count;
+END CATCH;
+
+BEGIN TRY
+    EXEC dbo.usp_confirmar_compra @cod_compra = 10;     -- cancelada
+END TRY
+BEGIN CATCH
+    SELECT 'compra cancelada (10)' AS caso, ERROR_NUMBER() AS error,
+           ERROR_MESSAGE() AS mensaje, @@TRANCOUNT AS tran_count;
+END CATCH;
+
+BEGIN TRY
+    EXEC dbo.usp_confirmar_compra @cod_compra = 999;    -- inexistente
+END TRY
+BEGIN CATCH
+    SELECT 'compra inexistente (999)' AS caso, ERROR_NUMBER() AS error,
+           ERROR_MESSAGE() AS mensaje, @@TRANCOUNT AS tran_count;
+END CATCH;
+
+SELECT cod_compra, estado FROM dbo.compra WHERE cod_compra IN (1, 9, 10) ORDER BY cod_compra;
+GO
+
+-- =============================================================
+-- T16. Procedimiento dentro de una transaccion externa
+-- Se confirma la compra 9 y despues se intenta confirmar la 10 (cancelada).
+-- El error revierte solo la parte del procedimiento (hasta su punto de
+-- recuperacion): la confirmacion de la compra 9 sigue vigente y la
+-- transaccion externa sigue abierta. Despues el llamador decide descartar todo.
+-- Esperado: tras la confirmacion rechazada, contador 1, estado de la
+--           transaccion 1, compra 9 recibida y stock del producto 1 = 17;
+--           tras el ROLLBACK externo, pendiente y stock 12.
+-- =============================================================
+
+SET NOCOUNT ON;
+SET XACT_ABORT OFF;
+
+BEGIN TRANSACTION;
+
+    EXEC dbo.usp_confirmar_compra @cod_compra = 9;
+    SELECT 'T16 - DENTRO DE LA TRANSACCION' AS momento, c.cod_compra, c.estado,
+           (SELECT stock FROM dbo.producto WHERE cod_producto = 1) AS stock_producto_1,
+           (SELECT stock FROM dbo.producto WHERE cod_producto = 9) AS stock_producto_9
+    FROM dbo.compra c WHERE c.cod_compra = 9;
+
+    -- Un error de negocio dentro del procedimiento revierte solo su parte
+    BEGIN TRY
+        EXEC dbo.usp_confirmar_compra @cod_compra = 10;
+    END TRY
+    BEGIN CATCH
+        PRINT 'Confirmacion rechazada: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    SELECT 'T16 - TRAS LA CONFIRMACION RECHAZADA (la primera sigue vigente)' AS momento,
+           @@TRANCOUNT AS contador, XACT_STATE() AS estado_transaccion,
+           (SELECT estado FROM dbo.compra WHERE cod_compra = 9) AS estado_compra_9,
+           (SELECT stock FROM dbo.producto WHERE cod_producto = 1) AS stock_producto_1;
+
+ROLLBACK TRANSACTION;   -- el llamador decide descartar todo
+
+SELECT 'T16 - DESPUES DEL ROLLBACK EXTERNO' AS momento,
+       (SELECT estado FROM dbo.compra WHERE cod_compra = 9) AS estado_compra_9,
+       (SELECT stock FROM dbo.producto WHERE cod_producto = 1) AS stock_producto_1,
+       @@TRANCOUNT AS contador;
+GO
+
+-- Se restablece el valor de XACT_ABORT con el que empiezan las pruebas T1 a T6
+SET XACT_ABORT ON;
+GO
+
