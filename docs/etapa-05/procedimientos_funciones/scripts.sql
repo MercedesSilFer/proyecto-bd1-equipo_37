@@ -469,7 +469,7 @@ GO
 --   RN.03/RN.19  El cambio de precio de lista NO altera los pedidos ya
 --                registrados (el precio queda congelado en detalle_pedido).
 --   RN.14        Los cambios de precio y stock quedan auditados (trigger de
---                la carpeta sql/tecnico/triggers).
+--                la carpeta docs/etapa-05/triggers_auditoria).
 
 
 CREATE OR ALTER PROCEDURE dbo.usp_producto_modificar
@@ -897,4 +897,17 @@ INSERT INTO @res VALUES ('E) monto con subconsulta directa (CROSS APPLY)', 24000
 DROP TABLE #nums;
 
 SELECT prueba, repeticiones, ms FROM @res;
+GO
+
+-- =============================================================
+-- Limpieza de los productos de los lotes (D1 y D2)
+-- Deja el catalogo como en la carga inicial, para que los demas temas
+-- den los resultados documentados.
+-- =============================================================
+DELETE FROM dbo.producto WHERE nombre LIKE 'LOTE-A %' OR nombre LIKE 'LOTE-P %';
+
+DECLARE @max_producto INT = (SELECT ISNULL(MAX(cod_producto), 0) FROM dbo.producto);
+DBCC CHECKIDENT ('dbo.producto', RESEED, @max_producto) WITH NO_INFOMSGS;
+
+SELECT COUNT(*) AS productos FROM dbo.producto;
 GO

@@ -124,7 +124,7 @@ Notas:
  
 - La prueba B1 se ejecuta dentro de una transacción que se deshace al final, para no modificar los datos de prueba de las etapas anteriores. Por eso se muestra el stock "antes", "después" y "tras el rollback".
 - B1 espera 58.000,00 porque en la fecha de ejecución no hay promociones con descuento vigentes sobre esos productos. Si hubiera una, el precio y el total serían menores.
-- D1 y D2 crean productos reales (`LOTE-A` y `LOTE-P`) que no se deshacen, por eso se ejecutan una sola vez. D3 y D4 trabajan sobre los productos `LOTE-P`, y D5 usa una transacción con `ROLLBACK` para no dejar inactivo un producto del catálogo original.
+- D1 y D2 crean productos reales (`LOTE-A` y `LOTE-P`) que se eliminan al final del script, para no alterar los resultados de los demás temas. D3 y D4 trabajan sobre los productos `LOTE-P`, y D5 usa una transacción con `ROLLBACK` para no dejar inactivo un producto del catálogo original.
 - Si la parte 2 se ejecuta después de D1 y D2, el listado de A1 incluye también los productos `LOTE-*`; el resultado esperado de A1 no cambia.
 
 ### Conclusiones de las pruebas complementarias
