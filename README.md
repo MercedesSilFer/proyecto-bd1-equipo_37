@@ -20,9 +20,9 @@ La base de datos cubre clientes, catálogo de productos, promociones, compras a 
 | II. Modelado | DER, modelo relacional, normalización y decisiones de diseño | Completa | [docs/etapa-02](docs/etapa-02/) |
 | III. Implementación | 22 tablas, restricciones y datos de prueba | Completa | [docs/etapa-03](docs/etapa-03/) |
 | IV. Consultas | 15 casos de uso: comprobante, reporte agregado y consultas avanzadas | Completa | [docs/etapa-04](docs/etapa-04/) |
-| V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | En curso | [docs/etapa-05](docs/etapa-05/) |
+| V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | Scripts y documentación completos; falta unificar las versiones repetidas | [docs/etapa-05](docs/etapa-05/) |
 
-En la Etapa V, tres temas tienen documentación, scripts y capturas, y todavía tienen tareas pendientes. Índices y Seguridad tienen sus scripts y su documentación. `sql/tecnico/` tiene scripts adicionales de procedimientos, funciones y transacciones, todavía sin documentación ni capturas, y algunos de sus objetos repiten los de `docs/etapa-05/`.
+En la Etapa V, los cinco temas tienen scripts, documentación y conclusiones. Algunos objetos de `sql/tecnico/` repiten los de `docs/etapa-05/`: están listados en [procedimientos_funciones/investigacion.md](docs/etapa-05/procedimientos_funciones/investigacion.md). Parte de los resultados se verificó con la salida de `sqlcmd` y todavía no tiene captura de SSMS.
 
 ## Cómo ejecutarlo
 
