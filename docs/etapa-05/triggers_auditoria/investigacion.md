@@ -81,14 +81,17 @@ Ideas clave:
 | `trg_pedido_auditoria` | `pedido` | `estado`, `estado_pago`, `estado_envio` | `INSERT`, `DELETE` y `UPDATE` cuando alguno cambia |
 | `trg_compra_auditoria` | `compra` | `estado` | `INSERT`, `DELETE` y `UPDATE` cuando cambia |
 | `trg_factura_auditoria` | `factura` | tipo, número y total | `INSERT`, `DELETE` y cualquier `UPDATE` |
+| `trg_factura_no_borrar` | `factura` | No registra: emite un mensaje e impide la operación (`INSTEAD OF`, error 50012) | `DELETE` |
 
-**Usuario responsable:** `auditoria.cod_usuario` es `INT NOT NULL` con FK a `usuario`, pero el login de SQL Server (`SUSER_SNAME()`) es texto y no coincide con ese código. Por eso el código viaja en `SESSION_CONTEXT`, que la aplicación fija al iniciar sesión:
+**Usuario de la base de datos:** `auditoria.usuario_bd` guarda el login que ejecutó la operación. Se completa solo con `DEFAULT SUSER_SNAME()`, así que los triggers no tuvieron que cambiar.
+
+**Empleado responsable:** `auditoria.cod_usuario` es `INT NOT NULL` con FK a `usuario`, pero el login de SQL Server (`SUSER_SNAME()`) es texto y no coincide con ese código. Por eso el código viaja en `SESSION_CONTEXT`, que la aplicación fija al iniciar sesión:
 
 ```sql
 EXEC sys.sp_set_session_context @key = N'cod_usuario', @value = 3;
 ```
 
-Si la sesión no lo fijó, el trigger usa el usuario 1 (`mgonzalez`, administrador) como usuario del sistema, para que la auditoría no falle por ese motivo. Limitación: en ese caso el cambio queda a nombre de ese usuario aunque lo haya hecho otra persona, y la tabla no guarda el login de la base de datos.
+Si la sesión no lo fijó, el trigger usa el usuario 1 (`mgonzalez`, administrador) como usuario del sistema, para que la auditoría no falle por ese motivo. Limitación: en ese caso `cod_usuario` queda a nombre de ese usuario aunque lo haya hecho otra persona, aunque `usuario_bd` sigue mostrando el login real.
 
 **Formato de los valores:** texto corto con los campos que cambiaron, por ejemplo `precio_lista=20661.16; stock=40`. La fecha la completa el `DEFAULT GETDATE()` de la tabla.
 
@@ -100,16 +103,28 @@ Las pruebas están en la parte 2 de [scripts.sql](scripts.sql). La columna **Obt
 
 | Prueba | Caso | Resultado esperado | Obtenido | Captura |
 |---|---|---|---|---|
-| A0 | Triggers creados | 4 triggers, `AFTER`, habilitados | Sí | `01_triggers_creados.png` |
+| A0 | Triggers de auditoría creados | 4 triggers, `AFTER`, habilitados | Sí | `01_triggers_creados.png` |
 | A1 | `UPDATE` de stock | 1 fila: anterior `stock=40`, nuevo `stock=39`, usuario 3; tras la limpieza, stock 40 y 10 filas | Sí | `02_auditoria_stock.png` |
 | A2 | `INSERT` + `DELETE` de producto | 2 filas: `INSERT` con anterior `NULL` y `DELETE` con nuevo `NULL`, usuario 9 | Sí | `03_auditoria_insert_delete.png` |
 | A3 | Venta con el procedimiento | 2 filas (pedido `INSERT` y producto `UPDATE`), usuario 4; tras el `ROLLBACK`, 10 filas y stock 40 | Sí | `04_auditoria_venta.png` |
 | A4 | Usuario inexistente (999) | Error 547 (FK); stock 40; auditoría 10 | Sí | `05_auditoria_error.png` |
 | A5 | `UPDATE` de los 10 productos | 10 filas en una sola sentencia; tras la limpieza, 10 filas | Sí | `06_auditoria_masiva.png` |
+| A6 | Usuario de la base de datos | `usuario_bd` igual al login de la sesión | Sí | Falta |
+| A7 | Borrar una factura | Error 50012; facturas 10/10; auditoría 10/10 | Sí | Falta |
 
 Notas:
 
-- A1, A2 y A5 revierten el cambio y borran las filas de auditoría que generaron.
+- A1, A2, A5 y A6 revierten el cambio y borran las filas de auditoría que generaron.
+- A6 y A7 se verificaron con la salida de `sqlcmd`, sobre una base temporal recién cargada; todavía no tienen captura.
+- También se probó una venta con el procedimiento y un login de solo lectura: `usuario_bd` registró ese login, aunque no tiene permiso sobre `auditoria`.
 - A3 hace `ROLLBACK`: la auditoría desaparece con la venta, porque es transaccional.
 - A4: el `UPDATE` se ejecuta, pero el trigger no puede insertar en `auditoria` (FK) y el cambio se revierte: si la auditoría falla, el cambio no se aplica.
 - Al terminar, `auditoria` vuelve a 10 filas y el stock queda como en la Etapa IV.
+
+## 6. Conclusiones
+
+- **La auditoría no depende de la aplicación:** cualquier sentencia que cambie los datos auditados deja rastro, también un `UPDATE` hecho a mano, salvo que alguien con permisos deshabilite el trigger.
+- **Es atómica con el cambio:** si la auditoría falla, el cambio se revierte (A4), y si la transacción se revierte, la auditoría también (A3).
+- **Un trigger debe trabajar por conjuntos:** un solo `UPDATE` sobre 10 productos generó 10 filas de auditoría (A5).
+- **Conviene guardar los dos usuarios:** `usuario_bd` dice quién se conectó a la base, y `cod_usuario`, qué empleado informó la aplicación. Con una cuenta compartida, el primero no alcanza para identificar a la persona.
+- **`INSTEAD OF` permite prohibir una operación:** `trg_factura_no_borrar` reemplaza al `DELETE`, así que la factura nunca se borra y tampoco se genera auditoría (A7).

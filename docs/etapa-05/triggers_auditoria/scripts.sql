@@ -159,12 +159,30 @@ BEGIN
 END;
 GO
 
+-- -------------------------------------------------------------
+-- Trigger 5: factura (impide el borrado)
+-- Una factura es un comprobante fiscal: no se puede eliminar.
+-- INSTEAD OF reemplaza al DELETE, así que la fila nunca se borra.
+-- Codigo de error propio: 50012.
+-- -------------------------------------------------------------
+CREATE OR ALTER TRIGGER dbo.trg_factura_no_borrar
+ON dbo.factura
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (SELECT 1 FROM deleted)
+        THROW 50012, 'Una factura no se puede eliminar: es un comprobante fiscal.', 1;
+END;
+GO
+
 -- #############################################################
 -- PARTE 2: DEMOSTRACION (ejecutar cada bloque por separado)
 -- #############################################################
 
 -- =============================================================
--- 0. Verificacion: los cuatro triggers quedaron creados
+-- 0. Verificacion: los cuatro triggers de auditoria quedaron creados
 -- Esperado: 4 filas, todas AFTER y habilitadas.
 -- =============================================================
 SELECT OBJECT_NAME(parent_id) AS tabla,
@@ -174,6 +192,7 @@ SELECT OBJECT_NAME(parent_id) AS tabla,
 FROM sys.triggers
 WHERE parent_id IN (OBJECT_ID('dbo.producto'), OBJECT_ID('dbo.pedido'),
                     OBJECT_ID('dbo.compra'),   OBJECT_ID('dbo.factura'))
+  AND name LIKE '%auditoria'
 ORDER BY tabla;
 GO
 
@@ -332,4 +351,45 @@ DELETE FROM auditoria WHERE cod_auditoria > @antes5;
 EXEC sys.sp_set_session_context @key = N'cod_usuario', @value = NULL;
 
 SELECT COUNT(*) AS auditoria_total FROM auditoria;
+GO
+
+-- =============================================================
+-- A6. Usuario de la base de datos en la auditoria
+-- usuario_bd se completa solo con SUSER_SNAME(), sin que los
+-- triggers lo indiquen. Esperado: una fila cuyo usuario_bd es igual
+-- al login de la sesion; despues se limpia.
+-- =============================================================
+DECLARE @antes6 INT = (SELECT ISNULL(MAX(cod_auditoria), 0) FROM auditoria);
+
+UPDATE producto SET stock = stock - 1 WHERE cod_producto = 2;
+
+SELECT cod_auditoria, entidad, operacion, usuario_bd, SUSER_SNAME() AS login_sesion,
+       CASE WHEN usuario_bd = SUSER_SNAME() THEN 'coincide' ELSE 'NO COINCIDE' END AS control
+FROM auditoria
+WHERE cod_auditoria > @antes6;
+
+-- Limpieza
+UPDATE producto SET stock = stock + 1 WHERE cod_producto = 2;
+DELETE FROM auditoria WHERE cod_auditoria > @antes6;
+
+SELECT COUNT(*) AS auditoria_total FROM auditoria;
+GO
+
+-- =============================================================
+-- A7. Intentar borrar una factura
+-- Esperado: error 50012, la factura sigue y la auditoria no cambia.
+-- =============================================================
+DECLARE @facturas7 INT = (SELECT COUNT(*) FROM factura);
+DECLARE @auditoria7 INT = (SELECT COUNT(*) FROM auditoria);
+
+BEGIN TRY
+    DELETE FROM factura WHERE cod_factura = 1;
+    SELECT 'NO FALLO' AS resultado;
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS error, ERROR_MESSAGE() AS mensaje;
+END CATCH;
+
+SELECT @facturas7 AS facturas_antes, COUNT(*) AS facturas_despues FROM factura;
+SELECT @auditoria7 AS auditoria_antes, COUNT(*) AS auditoria_despues FROM auditoria;
 GO
