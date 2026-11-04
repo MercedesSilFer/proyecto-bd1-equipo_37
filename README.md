@@ -22,7 +22,7 @@ La base de datos cubre clientes, catálogo de productos, promociones, compras a 
 | IV. Consultas | 15 casos de uso: comprobante, reporte agregado y consultas avanzadas | Completa | [docs/etapa-04](docs/etapa-04/) |
 | V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | Scripts y documentación completos; falta unificar las versiones repetidas | [docs/etapa-05](docs/etapa-05/) |
 
-En la Etapa V, los cinco temas tienen scripts, documentación y conclusiones. Algunos objetos de `sql/tecnico/` repiten los de `docs/etapa-05/`: están listados en [procedimientos_funciones/investigacion.md](docs/etapa-05/procedimientos_funciones/investigacion.md). Parte de los resultados se verificó con la salida de `sqlcmd` y todavía no tiene captura de SSMS.
+En la Etapa V, los cinco temas tienen scripts, documentación y conclusiones. Algunos objetos de `sql/tecnico/` repiten los de `docs/etapa-05/`: `fn_monto_pedido` a `fn_total_pedido`, `fn_mayor_descuento_vigente` a `fn_descuento_vigente` y `usp_registrar_venta` a `sp_registrar_venta_completa`. Parte de los resultados se verificó con la salida de `sqlcmd` y todavía no tiene captura de SSMS.
 
 ## Cómo ejecutarlo
 
