@@ -109,3 +109,29 @@ Notas:
 - El permiso que impide cambiar `estado` con un `UPDATE` directo está en [01_permisos_estado_pedido.sql](../../../sql/tecnico/seguridad/01_permisos_estado_pedido.sql).
 - T5 demuestra que el procedimiento respeta la transacción del llamador (`@tran_propia`).
 - Al terminar, la base queda con 12 pedidos y 18 detalles.
+
+## 6. Transacciones anidadas y pruebas adicionales
+
+Estos scripts están en [sql/tecnico/transacciones/](../../../sql/tecnico/transacciones/). Se ejecutaron con `sqlcmd` sobre una base temporal recién cargada; todavía no tienen capturas.
+
+| Prueba | Caso | Resultado |
+|---|---|---|
+| A | `INSERT` en dos tablas y `UPDATE` en otra, con `COMMIT` | Pedidos 12→13, renglones 18→19, stock 40→39 |
+| B | Error provocado después del `INSERT` | `ROLLBACK`: pedidos, renglones y stock sin cambios |
+| C | Stock insuficiente | `ROLLBACK`: pedidos, renglones y stock sin cambios |
+| D | El mismo error, sin transacción | Queda un pedido sin renglones (pedidos 13→14) |
+| Anidada 1 | `COMMIT` interno y `ROLLBACK` externo | `@@TRANCOUNT` 0→1→2→1→0; no queda ninguna fila |
+| Anidada 2 | `ROLLBACK` en la transacción interna | `@@TRANCOUNT` 0; no queda ninguna fila |
+| Anidada 3 | `ROLLBACK` a un punto de recuperación | `@@TRANCOUNT` 1; solo se deshace lo posterior al punto |
+| Anidada 4 | `usp_registrar_venta` dentro de otra transacción, con una venta rechazada | Se rechaza por stock y la primera venta sigue vigente hasta el `ROLLBACK` externo |
+
+También está `usp_confirmar_compra`, que pasa una compra pendiente a recibida y suma las unidades al stock (RN.20).
+
+## 7. Conclusiones
+
+- **La transacción evita datos a medias:** con el mismo error, la prueba B no deja nada, y la D deja un pedido sin renglones.
+- **Un `COMMIT` interno no confirma nada:** solo baja `@@TRANCOUNT`. Los cambios se hacen permanentes con el `COMMIT` más externo.
+- **Un `ROLLBACK` sin nombre deshace todo:** aunque esté en una transacción interna, revierte también la externa y deja `@@TRANCOUNT` en 0.
+- **Para deshacer una parte hace falta un punto de recuperación:** con `SAVE TRANSACTION` se revierte solo lo posterior a ese punto, sin cerrar la transacción.
+- **Un procedimiento tiene que respetar la transacción de quien lo llama:** por eso los nuestros solo abren una si no hay otra abierta (T5 y la anidada 4).
+- **El aislamiento entre sesiones sigue sin probarse:** las pruebas corren en una sola sesión, así que el bloqueo por `UPDLOCK` y `HOLDLOCK` no quedó demostrado con dos ventas simultáneas.
