@@ -20,9 +20,9 @@ La base de datos cubre clientes, catálogo de productos, promociones, compras a 
 | II. Modelado | DER, modelo relacional, normalización y decisiones de diseño | Completa | [docs/etapa-02](docs/etapa-02/) |
 | III. Implementación | 22 tablas, restricciones y datos de prueba | Completa | [docs/etapa-03](docs/etapa-03/) |
 | IV. Consultas | 15 casos de uso: comprobante, reporte agregado y consultas avanzadas | Completa | [docs/etapa-04](docs/etapa-04/) |
-| V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | Scripts y documentación completos; falta unificar las versiones repetidas | [docs/etapa-05](docs/etapa-05/) |
+| V. Temas técnicos | Procedimientos y funciones, transacciones, triggers, seguridad e índices | Completa | [docs/etapa-05](docs/etapa-05/) |
 
-En la Etapa V, los cinco temas tienen scripts, documentación y conclusiones. Algunos objetos de `sql/tecnico/` repiten los de `docs/etapa-05/`: `fn_monto_pedido` a `fn_total_pedido`, `fn_mayor_descuento_vigente` a `fn_descuento_vigente` y `usp_registrar_venta` a `sp_registrar_venta_completa`. Parte de los resultados se verificó con la salida de `sqlcmd` y todavía no tiene captura de SSMS.
+En la Etapa V, los cinco temas tienen scripts, documentación y conclusiones. Parte de los resultados se verificó con la salida de `sqlcmd` y todavía no tiene captura de SSMS.
 
 ## Cómo ejecutarlo
 
@@ -36,7 +36,7 @@ Ejecutar en este orden:
 | 2 | [sql/dml/cargar_datos.sql](sql/dml/cargar_datos.sql) | Carga los datos de prueba |
 | 3 | [sql/consultas/](sql/consultas/) | Consultas de la Etapa IV, en cualquier orden |
 | 4 | [procedimientos_funciones/scripts.sql](docs/etapa-05/procedimientos_funciones/scripts.sql) | Crea las funciones y el procedimiento de venta, y corre sus pruebas |
-| 5 | [transacciones/scripts.sql](docs/etapa-05/transacciones/scripts.sql) | Crea la cancelación de pedidos y corre las pruebas de transacciones (usa el paso 4) |
+| 5 | [transacciones/scripts.sql](docs/etapa-05/transacciones/scripts.sql) | Crea la cancelación de pedidos y la confirmación de compras, y corre las pruebas de transacciones (usa el paso 4) |
 | 6 | [triggers_auditoria/scripts.sql](docs/etapa-05/triggers_auditoria/scripts.sql) | Crea los triggers de auditoría y corre sus pruebas (usa el paso 4) |
 | 7 | [seguridad/01_permisos_estado_pedido.sql](sql/tecnico/seguridad/01_permisos_estado_pedido.sql) | Crea el rol de la aplicación, le impide cambiar `estado` sin los procedimientos y corre sus pruebas (usa los pasos 4 y 5) |
 | 8 | [seguridad/02_usuarios_y_roles.sql](sql/tecnico/seguridad/02_usuarios_y_roles.sql) | Crea usuarios y un rol de demostración y corre sus pruebas (usa el paso 4). Se limpia con `99_limpieza_usuarios.sql` |
@@ -49,8 +49,6 @@ sqlcmd -S .\SQLEXPRESS -E -C -f 65001 -i sql\dml\cargar_datos.sql
 ```
 
 `-f 65001` hace que los acentos se lean bien. Los índices filtrados de `direccion` exigen `QUOTED_IDENTIFIER ON`: estos dos scripts ya lo activan, pero otro script que modifique esa tabla con `sqlcmd` necesita la opción `-I`. Los resultados de las pruebas de auditoría suponen una base recién cargada: si se ejecuta el paso 5 con los triggers ya creados, quedan filas de más en `auditoria`.
-
-**Scripts adicionales:** los de [sql/tecnico/](sql/tecnico/) se ejecutan en una base recién cargada, aparte de los pasos 3 a 6, en este orden: `funciones/` (01 y 02), `procedimientos/` (01 a 07 y `99_limpieza_lotes.sql`) y `transacciones/` (01 a 04 y `99_limpieza_demo.sql`).
 
 **Índices:** los scripts de [sql/tecnico/indices/](sql/tecnico/indices/) se ejecutan en orden (01 a 03) sobre la base ya cargada. Crean una tabla auxiliar de un millón de filas y la eliminan al final. `02_pruebas_indices.sql` vacía la memoria de datos de todo el servidor, así que conviene usarlo solo en un equipo de pruebas.
 
